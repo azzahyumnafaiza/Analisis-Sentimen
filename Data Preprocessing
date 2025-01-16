@@ -1,0 +1,977 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Data Preprocessing\n",
+        "Pada tahap ini data dibersihkan melalui beberapa tahap\n",
+        "\n",
+        "\n",
+        "1.   Casefolding dan Cleaning (data bahasa indonesia)\n",
+        "2.   Tokenizing (data bahasa indonesia)\n",
+        "3. Normalisasi\n",
+        "4. Translate ke bahasa inggris\n",
+        "5. Casefolding (data inggris)\n",
+        "6. Tokenizing\n",
+        "7. Stopwords atau filterring\n",
+        "8. Stemming\n",
+        "\n",
+        "Setiap prosesnya akan dijelaskan pada kode di bawah\n",
+        "\n",
+        "\n",
+        "\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "COWj_ywdvI00"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# **Pacakage yang digunakan pada text preprocessing**"
+      ],
+      "metadata": {
+        "id": "pSD-XSTGwgdH"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "6ItBBx_HFrnV",
+        "outputId": "0ce3a13c-1672-421d-89ff-ce7b1e19e864"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package punkt to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping tokenizers/punkt.zip.\n"
+          ]
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 1
+        }
+      ],
+      "source": [
+        "import pandas as pd\n",
+        "import nltk\n",
+        "import string\n",
+        "import re\n",
+        "nltk.download('punkt')"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Mengimport Data menggunakan Gdrive"
+      ],
+      "metadata": {
+        "id": "pYM7EY0Tw9TF"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from google.colab import drive\n",
+        "drive.mount('/content/gdrive')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "YnXdLnlJJqXk",
+        "outputId": "8856b56a-c35a-4a48-99fb-000d35454bc7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Drive already mounted at /content/gdrive; to attempt to forcibly remount, call drive.mount(\"/content/gdrive\", force_remount=True).\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data = pd.read_csv('/content/gdrive/MyDrive/Data analisiis.csv', encoding ='latin-1')"
+      ],
+      "metadata": {
+        "id": "g65iBwTsJY0w"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 1. CaseFolding dan Cleaning\n",
+        "proses ini mengubah seluruh kata menjadi huruf kecil, menghilangkan simbol-simbol, menghapus kata kunci, dsb"
+      ],
+      "metadata": {
+        "id": "UxcUTtvVxIFt"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import re\n",
+        "\n",
+        "def casefolding(content):\n",
+        "\n",
+        "    # Lower case\n",
+        "    content = content.lower()\n",
+        "\n",
+        "    # Remove spacing\n",
+        "    content = content.strip()\n",
+        "\n",
+        "    # Remove tab, new line, hashtag\n",
+        "    content = content.replace('\\t', ' ').replace('\\n', ' ').replace('\\\\u', ' ').replace('\\\\', ' ')\n",
+        "\n",
+        "    # Remove non ASCII\n",
+        "    content = content.encode('ascii', 'replace').decode('ascii')\n",
+        "\n",
+        "    # Remove mention, hashtag, quotes, square brackets, etc.\n",
+        "    content = ' '.join(re.sub(\"([@#][A-Za-z0-9]+)|(\\w+:\\/\\/\\S+)|[\\\"'()[\\]{}]\", \" \", content).split())\n",
+        "\n",
+        "    # Remove incomplete URL\n",
+        "    content = content.replace(\"http://\", \"\").replace(\"https://\", \"\")\n",
+        "\n",
+        "    # Remove punctuation\n",
+        "    content = re.sub(r'[?|$|.|!^2_:\")(,--+]', ' ', content)\n",
+        "\n",
+        "    # Remove number\n",
+        "    content = re.sub(r\"\\d+\", \"\", content)\n",
+        "\n",
+        "    # Remove single char\n",
+        "    content = re.sub(r'\\b\\w\\b', '', content)\n",
+        "\n",
+        "    return content"
+      ],
+      "metadata": {
+        "id": "ST9OR5ZhSPVo"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_clean'] = data['Content '].apply(casefolding)"
+      ],
+      "metadata": {
+        "id": "pjKd_ZM-M_Lj"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#cleaning (menghapus keyword, dan kata-kata yang tidak diperlukan)\n",
+        "\n",
+        "def cleaning (content_clean):\n",
+        "  content_clean = content_clean.replace('ub', \" \").replace('universitas brawijaya',\" \").replace('malang',\" \").replace('jakarta',\" \").replace('mfs',\" \").replace('batu',\" \").replace('kompas',\" \").replace('scroll to countinue with content',\" \").replace('com',\" \").replace('Advertisment',\" \").replace(\"official\",\" \").replace('braw',\" \").replace(\"unibraw\",\" \").replace('MALANG',\" \")\n",
+        "\n",
+        "\n",
+        "  return content_clean"
+      ],
+      "metadata": {
+        "id": "3VuHQzvV_dK1"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_cleaning'] = data['content_clean'].apply(cleaning)"
+      ],
+      "metadata": {
+        "id": "jzILwC6ABddo"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_cleaning']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "DylS6bxHKHIY",
+        "outputId": "f68e2694-e880-4263-8028-5789be77f243"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0                   berupaya mendukung penurunan emis...\n",
+              "1                mengingatkan mahasiswa untuk berhati...\n",
+              "2      pelaksanaan pendaftaran seleksi nasional berda...\n",
+              "3          merupakan salah satu perguruan tinggi nege...\n",
+              "4        ramah difabel   menyediakan kampus yang rama...\n",
+              "                             ...                        \n",
+              "282       aku kapok ke klink   wkwk wkt semester  tip...\n",
+              "283    aliansi mahasiswa   raya mendeklarasikan pemil...\n",
+              "284       pengalaman periksa sakit kepala dada sesak ...\n",
+              "285       ukt setinggi langit fasilitas kesehatan sul...\n",
+              "286       klinik   probelamatik anjir aku pernah male...\n",
+              "Name: content_cleaning, Length: 287, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 39
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 2. Tokenizing (Data Bahasa Indonesia)"
+      ],
+      "metadata": {
+        "id": "uILkMLEjxRyu"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from nltk.tokenize import word_tokenize\n",
+        "from nltk.probability import FreqDist\n",
+        "import pandas as pd\n",
+        "import string\n",
+        "# Tokenize the data"
+      ],
+      "metadata": {
+        "id": "TFa4xThl1Z8g"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_tokenizing'] = data['content_cleaning'].apply(word_tokenize)"
+      ],
+      "metadata": {
+        "id": "BFFCmqK-x_BR"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_tokenizing']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "cPrlcTzY2MZ-",
+        "outputId": "f3aa6a6a-a40b-4d71-c0dc-34b26a40557f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0      [berupaya, mendukung, penurunan, emisi, gas, r...\n",
+              "1      [mengingatkan, mahasiswa, untuk, berhati, hati...\n",
+              "2      [pelaksanaan, pendaftaran, seleksi, nasional, ...\n",
+              "3      [merupakan, salah, satu, perguruan, tinggi, ne...\n",
+              "4      [ramah, difabel, menyediakan, kampus, yang, ra...\n",
+              "                             ...                        \n",
+              "282    [aku, kapok, ke, klink, wkwk, wkt, semester, t...\n",
+              "283    [aliansi, mahasiswa, raya, mendeklarasikan, pe...\n",
+              "284    [pengalaman, periksa, sakit, kepala, dada, ses...\n",
+              "285    [ukt, setinggi, langit, fasilitas, kesehatan, ...\n",
+              "286    [klinik, probelamatik, anjir, aku, pernah, mal...\n",
+              "Name: content_tokenizing, Length: 287, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 42
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 3. Spelling Normalization"
+      ],
+      "metadata": {
+        "id": "89SxyTUKxeMu"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import string\n",
+        "#mengimport data normalisasi\n",
+        "data_normalisasi = '//content/gdrive/MyDrive/data_norm.csv'\n",
+        "data_normalisasi = pd.read_csv(data_normalisasi, encoding ='latin')\n",
+        "data_normalisasi = data_normalisasi.drop(columns=\"_id\")\n",
+        "\n",
+        "#tambahan data normalisasi\n",
+        "data_normalisasi_tambahan = '/content/gdrive/MyDrive/key_norm_tambahan.csv'\n",
+        "data_normalisasi_tambahan = pd.read_csv(data_normalisasi_tambahan, encoding ='latin')\n",
+        "\n",
+        "#membuat kamus kata normalisasi\n",
+        "data_normalisasi_dict ={}\n",
+        "\n",
+        "for index, row in data_normalisasi.iterrows():\n",
+        "  if row[0] not in data_normalisasi_dict:\n",
+        "    data_normalisasi_dict[row[0]] = row[1]\n",
+        "\n",
+        "for index, row in data_normalisasi_tambahan.iterrows ():\n",
+        "  if row [0] not in data_normalisasi_dict:\n",
+        "    data_normalisasi_dict[row[0]]= row[1]\n",
+        "\n",
+        "#function normalisasi\n",
+        "def normalized_term (doc):\n",
+        "  return [data_normalisasi_dict[term] if term in data_normalisasi_dict else term for term in doc]\n",
+        "\n",
+        "data['content_normalized'] = data['content_tokenizing'].apply(normalized_term)"
+      ],
+      "metadata": {
+        "id": "LVcjSVkn3bJO"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data['content_normalized']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "0N89dCNvDcxn",
+        "outputId": "7c0244eb-6409-4630-de2a-7490a8bafbc0"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0      [berupaya, mendukung, penurunan, emisi, gas, r...\n",
+              "1      [mengingatkan, mahasiswa, untuk, berhati, hati...\n",
+              "2      [pelaksanaan, pendaftaran, seleksi, nasional, ...\n",
+              "3      [merupakan, salah, satu, perguruan, tinggi, ne...\n",
+              "4      [ramah, difabel, menyediakan, kampus, yang, ra...\n",
+              "                             ...                        \n",
+              "282    [saya, jera, ke, klink, wkwk, waktu, semester,...\n",
+              "283    [aliansi, mahasiswa, raya, mendeklarasikan, pe...\n",
+              "284    [pengalaman, periksa, sakit, kepala, dada, ses...\n",
+              "285    [ukt, setinggi, langit, fasilitas, kesehatan, ...\n",
+              "286    [klinik, probelamatik, anjir, saya, pernah, ma...\n",
+              "Name: content_normalized, Length: 287, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 44
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 4. Translate ke Bahasa Inggris\n",
+        "\n",
+        "pada proses ini dapat menggunakan library gtranslate dari python atau dapat menggunakan spreadsheet, namun sebelum dilakukan translate, ada baiknya data tersebut dijadikan satu kalimat kembali setelah di tokenize"
+      ],
+      "metadata": {
+        "id": "6dSkW30hxqk7"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#guna untuk melakukan translate terlebih dahulu, maka tokenizing di jadikan satu kalimat kembali\n",
+        "data['content_normalized_join'] = data['content_normalized'].apply(lambda x: ' '.join(x))"
+      ],
+      "metadata": {
+        "id": "zQb2ZVo5TAXI"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "output_path = '/content/gdrive/MyDrive/output_preprocessing_ina.csv'\n",
+        "data.to_csv(output_path, index=False)"
+      ],
+      "metadata": {
+        "id": "niuHeUNhUeYm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Import Data Berbahasa Inggris"
+      ],
+      "metadata": {
+        "id": "ZODKurwlyDvQ"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data_en = pd.read_csv('/content/gdrive/MyDrive/data_en.csv', encoding ='latin-1')"
+      ],
+      "metadata": {
+        "id": "gANwYOo_eXG-"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 5. Casefolding untuk data berbahasa inggris\n",
+        "dikarenakan pada proses translate akan ada huruf kapital dan penambahan tanda baca dan simbol, maka perlu dilakukannya kembali casefolding untuk menghilangkan hal tersebut"
+      ],
+      "metadata": {
+        "id": "7gw15frZyUIm"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "import re\n",
+        "# make a new casefolding function that include needed casefolding action\n",
+        "def casefolding_english(content):\n",
+        "\n",
+        "  #lowercase\n",
+        "  content = str(content).lower()\n",
+        "  #remove whitespace leading & trailing\n",
+        "  content = str(content).strip(\" \")\n",
+        "  #remove tab, new line, ans back slice\n",
+        "  content = content.replace('\\\\t',\" \").replace('\\\\n',\" \").replace('\\\\u',\" \").replace('\\\\',\"\")\n",
+        "  #remove punctuation\n",
+        "  content = ' '.join(re.sub(r'[?|$|.|!^2_:\")(--+,]', ' ',content).split())\n",
+        "  #remove number\n",
+        "  content = re.sub(r\"\\d+\", \"\",content)\n",
+        "  #remove multiple whitespace into single whitespace\n",
+        "  content = re.sub('\\s+',' ',content)\n",
+        "\n",
+        "  return content"
+      ],
+      "metadata": {
+        "id": "9iCzdYNWoSOm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data_en['casefolding_en'] = data_en['Content Bahasa Inggris'].apply(casefolding_english)"
+      ],
+      "metadata": {
+        "id": "5Z62_D-jfsCK",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "c61289f6-7acb-4d61-f17f-dfbeacb11754"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "<ipython-input-48-df05ea1260f5>:13: FutureWarning: Possible set difference at position 15\n",
+            "  content = ' '.join(re.sub(r'[?|$|.|!^2_:\")(--+,]', ' ',content).split())\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data_en['casefolding_en']"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "QX0vYPzMgHBp",
+        "outputId": "16370f72-6939-4fda-90b3-13637e9c0c8d"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0      seeks to support the reduction of greenhouse g...\n",
+              "1      reminds students to be careful of the circulat...\n",
+              "2      the implementation of national selection regis...\n",
+              "3      the company is one of the state universities p...\n",
+              "4      disability friendly campus provides a friendly...\n",
+              "                             ...                        \n",
+              "282    i was deterred from going to the clinic wkwk w...\n",
+              "283    the raya student alliance declared peaceful el...\n",
+              "284    experience check headache chest tightness give...\n",
+              "285        ukt is costly health facilities are difficult\n",
+              "286    problematic clinic once in the evening high fe...\n",
+              "Name: casefolding_en, Length: 287, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 50
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 6. Tokenizing (Data bahasa Inggris)\n",
+        "proses tokenizing masih sama menggunakan fungsi tokenizing sebelumnya, hanya saja penggunakan fungsi tersebut digunakan pada data yang sudah berbahasa inggris"
+      ],
+      "metadata": {
+        "id": "BcENL56kyqFa"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#Tokenize data english\n",
+        "\n",
+        "data_en['tokenizing_en'] = data_en['casefolding_en'].apply(word_tokenize)"
+      ],
+      "metadata": {
+        "id": "MXe2Jejtphp5"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data_en['tokenizing_en'].head()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "G0Knqla2qJZX",
+        "outputId": "9b34a01f-0991-45f5-b9e8-2057e49bf6af"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0    [seeks, to, support, the, reduction, of, green...\n",
+              "1    [reminds, students, to, be, careful, of, the, ...\n",
+              "2    [the, implementation, of, national, selection,...\n",
+              "3    [the, company, is, one, of, the, state, univer...\n",
+              "4    [disability, friendly, campus, provides, a, fr...\n",
+              "Name: tokenizing_en, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 52
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 7.Stopwords dan Filterring\n",
+        "Proses penghilangan kata-kata yang tidak penting atau tidak memiliki arti dan menyimpan kata-kata yang penting"
+      ],
+      "metadata": {
+        "id": "HXE-C0zHzJJ4"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import nltk\n",
+        "nltk.download('stopwords')\n",
+        "from nltk.corpus import stopwords\n",
+        "import pandas as pd\n",
+        "\n",
+        "#  stopword English\n",
+        "list_stopwords = stopwords.words('english')\n",
+        "list_stopwords.extend(['ai','ca','could',\"'d\",\"'ve\",\"'ll\",\"wo\",\"'s\"])\n",
+        "\n",
+        "#import data stopwords bahasa indonesia\n",
+        "stopwords_indo = pd.read_csv('/content/gdrive/MyDrive/stop_words_ina.csv', encoding ='latin-1')\n",
+        "list_stopwords_indo = list(stopwords_indo.stopwords.copy())\n",
+        "stopwords_indo = list(map(casefolding_english, list_stopwords_indo))\n",
+        "\n",
+        "#list kata negasi agar tidak terhapus dan mengganti makna saat proses pelabelan\n",
+        "list_kata_negasi = [\"aint\", \"arent\", \"cannot\", \"cant\", \"couldnt\", \"darent\", \"didnt\", \"doesnt\",\"ain't\", \"aren't\", \"can't\",\n",
+        "                    \"couldn't\", \"daren't\", \"didn't\", \"doesn't\",\"dont\", \"hadnt\", \"hasnt\", \"havent\", \"isnt\", \"mightnt\",\n",
+        "                    \"mustnt\", \"neither\",\"don't\", \"hadn't\", \"hasn't\", \"haven't\", \"isn't\", \"mightn't\", \"mustn't\",\"neednt\",\n",
+        "                    \"needn't\", \"never\", \"none\" \"no\", \"nope\", \"nor\", \"not\",  \"nothing\", \"nowhere\",\"oughtnt\", \"shant\", \"shouldnt\",\n",
+        "                    \"wasnt\", \"werent\",\"but\",\"oughtn't\", \"shan't\", \"shouldn't\", \"uh-uh\", \"wasn't\", \"weren't\", \"without\", \"wont\",\n",
+        "                    \"wouldnt\", \"won't\", \"wouldn't\", \"rarely\", \"seldom\", \"despite\", 'doesn', \"don't\",\"doesn't\", 'does']\n",
+        "#list booster word\n",
+        "list_kata_booster = ['absolutely', 'amazingly', 'costly', 'friendly', 'mostly', 'hopefully', 'successfully', 'actively', 'independently',\n",
+        "                     'especially', 'actively', 'very', 'smoothly', 'importantly', 'carefully', 'basically', 'fully','easily','slightly',\n",
+        "                     'blindly','unfriendly', 'deeply', 'increasingly', 'badly', 'unexpectedly','specifically', 'honestly', 'deliberately',\n",
+        "                     'peacefully','positively', 'immediately', 'actively', 'mutually', 'optimally', 'quite', 'really','so', 'more', 'most',\n",
+        "                     'badly', 'greatest','slight', 'slightly','kind of', 'kindof', 'less', 'unusually', 'usually', 'major', 'majorly', 'more',\n",
+        "                     'substantially', 'throughly', 'total', 'totally', 'almost', 'massively','widely', 'quickly']\n",
+        "\n",
+        "#tambahan stopwords\n",
+        "list_stopwords.extend(stopwords_indo)\n",
+        "list_stopwords.extend([\"there's\",\"there're\",\"i'm\",\"i'll\",\"i'd\",\"i've\",\"you're\",\"you'll\",\"you'd\",\"you've\",\n",
+        "                      \"they're\",\"they'll\",\"they'd\",\"they've\",\"we're\",\"we'll\",\"we'd\",\"we've\",\"he's\",\"he'll\",\n",
+        "                      \"he'd\",\"he've\",\"she's\",\"she'll\",\"she'd\",\"she've\",\"it's\",\"it'll\",\"what\",\"what's\",\"what'll\",\n",
+        "                      \"where\",\"where's\",\"who\",\"who's\",\"whose\",\"when\",'which',\"how\",'why','reportedly','allegedly',\n",
+        "                       \"'s\",\"'m\",\"campus\"] )\n",
+        "#menghapus duplikat\n",
+        "list_stopwords = set(list_stopwords)"
+      ],
+      "metadata": {
+        "id": "SBKfXk_SgNLd",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "46fac341-c843-4bd4-fed8-8ff9485dfee7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/stopwords.zip.\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install vaderSentiment"
+      ],
+      "metadata": {
+        "id": "L7pdvCS5wGV8",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "outputId": "5a5670ca-0791-43e3-e8e3-b55a51e854ca"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Collecting vaderSentiment\n",
+            "  Downloading vaderSentiment-3.3.2-py2.py3-none-any.whl (125 kB)\n",
+            "\u001b[?25l     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/126.0 kB\u001b[0m \u001b[31m?\u001b[0m eta \u001b[36m-:--:--\u001b[0m\r\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m126.0/126.0 kB\u001b[0m \u001b[31m3.6 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hRequirement already satisfied: requests in /usr/local/lib/python3.10/dist-packages (from vaderSentiment) (2.31.0)\n",
+            "Requirement already satisfied: charset-normalizer<4,>=2 in /usr/local/lib/python3.10/dist-packages (from requests->vaderSentiment) (3.3.2)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.10/dist-packages (from requests->vaderSentiment) (3.6)\n",
+            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.10/dist-packages (from requests->vaderSentiment) (2.0.7)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.10/dist-packages (from requests->vaderSentiment) (2024.2.2)\n",
+            "Installing collected packages: vaderSentiment\n",
+            "Successfully installed vaderSentiment-3.3.2\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer"
+      ],
+      "metadata": {
+        "id": "oTePhbZse4A4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#filterring\n",
+        "#menghilangkan kata di stopwords yang termasuk dalam kata negasi dan kata booster\n",
+        "list_stopwords = [x for x in list_stopwords if x not in list_kata_negasi ]\n",
+        "list_stopwords = [x for x in list_stopwords if x not in list_kata_booster ]\n",
+        "\n",
+        "#menghilangkan kata di stopwords yang termasuk kata tidak netral (karena berguna pada saat pelabelan)\n",
+        "analyzer = SentimentIntensityAnalyzer()\n",
+        "list_stopwords = [x for x in list_stopwords if analyzer.polarity_scores(x)['compound']==0]\n",
+        "\n",
+        "#fungsi menghilangkan stopwords\n",
+        "def remove_stopwords (words):\n",
+        "  return [word for word in words if word not in list_stopwords]\n",
+        "\n",
+        "data_en['filtering'] = data_en['tokenizing_en'].apply(remove_stopwords)"
+      ],
+      "metadata": {
+        "id": "OjWU0hu2dZiA"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "data_en['filtering'].head(5)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "CR_5zuDce_l3",
+        "outputId": "59f32499-45fb-4791-9200-f68cb920007a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0    [seeks, support, reduction, greenhouse, gas, e...\n",
+              "1    [reminds, careful, circulation, fraudulent, le...\n",
+              "2    [implementation, national, registration, sbp, ...\n",
+              "3    [largest, number, admissions, opens, number, e...\n",
+              "4    [disability, friendly, friendly, special, need...\n",
+              "Name: filtering, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 57
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 8. Stemming\n",
+        "Proses menghapus imbuhan kata, sehingga kata yang memiliki imbuhan berubah menjadi kata dasar"
+      ],
+      "metadata": {
+        "id": "ZmY_nY8Hzf1f"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from nltk.stem import PorterStemmer\n",
+        "from textblob import TextBlob\n",
+        "\n",
+        "p_s = PorterStemmer()\n",
+        "# fungsi stemming\n",
+        "def stemming (term):\n",
+        " return p_s.stem (term)\n",
+        "\n",
+        "# membuat dictionary dengan key tiap kata yang ada dalam data\n",
+        "term_dict = {}\n",
+        "for doc in data_en['filtering']:\n",
+        "  for term in doc :\n",
+        "    if term not in term_dict:\n",
+        "      term_dict[term] = ' '"
+      ],
+      "metadata": {
+        "id": "SlukzMprgRWx"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(term_dict)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "EXInAufNwUvA",
+        "outputId": "d10db468-69ff-4c9a-a557-9cb2387296bc"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "{'seeks': ' ', 'support': ' ', 'reduction': ' ', 'greenhouse': ' ', 'gas': ' ', 'emissions': ' ', 'government': ' ', 'target': ' ', 'reduce': ' ', 'rector': ' ', 'made': ' ', 'number': ' ', 'efforts': ' ', 'reducing': ' ', 'held': ' ', 'national': ' ', 'sustainability': ' ', 'emission': ' ', 'control': ' ', 'carbon': ' ', 'economic': ' ', 'value': ' ', 'mechanism': ' ', 'managing': ' ', 'called': ' ', 'management': ' ', 'prioritizes': ' ', 'preserving': ' ', 'nature': ' ', 'planting': ' ', 'endemic': ' ', 'plants': ' ', 'maintain': ' ', 'natural': ' ', 'ecosystems': ' ', 'so': ' ', 'not': ' ', 'production': ' ', 'but': ' ', 'purpose': ' ', 'preservation': ' ', 'buffering': ' ', 'rainwater': ' ', 'absorption': ' ', 'prevent': ' ', 'erosion': ' ', 'yes': ' ', 'area': ' ', 'carried': ' ', 'positive': ' ', 'impact': ' ', 'maintaining': ' ', 'green': ' ', 'addition': ' ', 'protected': ' ', 'hectares': ' ', 'look': ' ', 'google': ' ', 'maps': ' ', 'color': ' ', 'future': ' ', 'existing': ' ', 'trees': ' ', 'cut': ' ', 'planned': ' ', 'plant': ' ', 'greatest': ' ', 'capacity': ' ', 'replace': ' ', 'needs': ' ', 'thought': ' ', 'greater': ' ', 'reminds': ' ', 'careful': ' ', 'circulation': ' ', 'fraudulent': ' ', 'letters': ' ', 'payment': ' ', 'single': ' ', 'tuition': ' ', 'fees': ' ', 'ukt': ' ', 'letter': ' ', 'asks': ' ', 'pay': ' ', 'listed': ' ', 'reason': ' ', 'system': ' ', 'problem': ' ', 'application': ' ', 'never': ' ', 'illegal': ' ', 'levies': ' ', 'bills': ' ', 'bill': ' ', 'ensuring': ' ', 'does': ' ', 'commerce': ' ', 'stated': ' ', 'circulated': ' ', 'emphasized': ' ', 'procedure': ' ', 'paying': ' ', 'explained': ' ', 'website': ' ', 'transactions': ' ', 'using': ' ', 'personal': ' ', 'individual': ' ', 'hoped': ' ', 'deceived': ' ', 'worried': ' ', 'anticipate': ' ', 'implementation': ' ', 'registration': ' ', 'sbp': ' ', 'achievement': ' ', 'begin': ' ', 'prospective': ' ', 'prepare': ' ', 'snp': ' ', 'snmptn': ' ', 'quota': ' ', 'percentage': ' ', 'enter': ' ', 'estimated': ' ', 'accepted': ' ', 'route': ' ', 'less': ' ', 'social': ' ', 'study': ' ', 'programmes': ' ', 'favoured': ' ', 'least': ' ', 'favourite': ' ', 'reference': ' ', 'largest': ' ', 'admissions': ' ', 'opens': ' ', 'entry': ' ', 'channels': ' ', 'taken': ' ', 'quotas': ' ', 'opened': ' ', 'achievements': ' ', 'tests': ' ', 'channel': ' ', 'cooperate': ' ', 'party': ' ', 'person': ' ', 'promises': ' ', 'certain': ' ', 'cost': ' ', 'path': ' ', 'open': ' ', 'advantages': ' ', 'charged': ' ', 'fee': ' ', 'standard': ' ', 'no': ' ', 'base': ' ', 'money': ' ', 'like': ' ', 'consists': ' ', 'non': ' ', 'report': ' ', 'cards': ' ', 'international': ' ', 'champion': ' ', 'hafiz': ' ', 'evidenced': ' ', 'certificate': ' ', 'disability': ' ', 'friendly': ' ', 'special': ' ', 'disabilities': ' ', 'accompanied': ' ', 'volunteers': ' ', 'fulfilled': ' ', 'requirements': ' ', 'join': ' ', 'proven': ' ', 'graduate': ' ', 'faster': ' ', 'working': ' ', 'higher': ' ', 'starting': ' ', 'salary': ' ', 'average': ' ', 'months': ' ', 'job': ' ', 'alumni': ' ', 'short': ' ', 'fast': ' ', 'graduating': ' ', 'college': ' ', 'registered': ' ', 'increasing': ' ', 'increases': ' ', 'scattered': ' ', 'prepared': ' ', 'namely': ' ', 'iisma': ' ', 'vocational': ' ', 'teaching': ' ', 'internships': ' ', 'studies': ' ', 'certified': ' ', 'exchange': ' ', 'entrepreneurship': ' ', 'practitioners': ' ', 'attention': ' ', 'aspects': ' ', 'satisfaction': ' ', 'majority': ' ', 'satisfied': ' ', 'very': ' ', 'participated': ' ', 'agree': ' ', 'completing': ' ', 'whole': ' ', 'additional': ' ', 'competencies': ' ', 'especially': ' ', 'soft': ' ', 'skills': ' ', 'thinking': ' ', 'solving': ' ', 'critical': ' ', 'creativity': ' ', 'hopefully': ' ', 'progress': ' ', 'good': ' ', 'world': ' ', 'challenges': ' ', 'education': ' ', 'easy': ' ', 'direction': ' ', 'funding': ' ', 'facilities': ' ', 'grateful': ' ', 'appreciated': ' ', 'stronger': ' ', 'educating': ' ', 'activity': ' ', 'formulate': ' ', 'shared': ' ', 'values': ' ', 'order': ' ', 'improve': ' ', 'quality': ' ', 'recognition': ' ', 'formulating': ' ', 'strategies': ' ', 'formation': ' ', 'human': ' ', 'resource': ' ', 'character': ' ', 'gain': ' ', 'sharing': ' ', 'experiences': ' ', 'improving': ' ', 'well': ' ', 'mobilise': ' ', 'cooperation': ' ', 'achieve': ' ', 'qs': ' ', 'university': ' ', 'ranking': ' ', 'offers': ' ', 'track': ' ', 'allows': ' ', 'successfully': ' ', 'choose': ' ', 'test': ' ', 'part': ' ', 'register': ' ', 'hope': ' ', 'lectures': ' ', 'thesis': ' ', 'completed': ' ', 'pass': ' ', 'doctoral': ' ', 'acceleration': ' ', 'complete': ' ', 'mostly': ' ', 'accepting': ' ', 'minimal': ' ', 'conferring': ' ', 'honoris': ' ', 'causa': ' ', 'doctorate': ' ', 'degree': ' ', 'strategic': ' ', 'conferral': ' ', 'stages': ' ', 'regulations': ' ', 'approved': ' ', 'added': ' ', 'seen': ' ', 'contribution': ' ', 'ideas': ' ', 'field': ' ', 'business': ' ', 'transformation': ' ', 'proves': ' ', 'dedication': ' ', 'actively': ' ', 'contributing': ' ', 'seeding': ' ', 'knowledge': ' ', 'forums': ' ', 'home': ' ', 'abroad': ' ', 'contributed': ' ', 'country': ' ', 'deal': ' ', 'covid': ' ', 'pandemic': ' ', 'recovery': ' ', 'encourages': ' ', 'distribution': ' ', 'earmarked': ' ', 'construction': ' ', 'scholarship': ' ', 'sarpras': ' ', 'assistance': ' ', 'educators': ' ', 'alignments': ' ', 'gender': ' ', 'young': ' ', 'evident': ' ', 'composition': ' ', 'record': ' ', 'respected': ' ', 'domestically': ' ', 'positions': ' ', 'career': ' ', 'paths': ' ', 'surpassed': ' ', 'named': ' ', 'best': ' ', 'alumnus': ' ', 'passion': ' ', 'created': ' ', 'organic': ' ', 'waste': ' ', 'seeing': ' ', 'surrounding': ' ', 'situation': ' ', 'certainly': ' ', 'disturb': ' ', 'balance': ' ', 'environment': ' ', 'makes': ' ', 'creates': ' ', 'ngalamaggot': ' ', 'points': ' ', 'proper': ' ', 'protein': ' ', 'animal': ' ', 'feed': ' ', 'rest': ' ', 'cultivation': ' ', 'fertiliser': ' ', 'product': ' ', 'development': ' ', 'maggot': ' ', 'cassava': ' ', 'computer': ' ', 'written': ' ', 'programs': ' ', 'majors': ' ', 'demand': ' ', 'following': ' ', 'list': ' ', 'most': ' ', 'medicine': ' ', 'law': ' ', 'communication': ' ', 'psychology': ' ', 'engineering': ' ', 'informatics': ' ', 'pharmacy': ' ', 'accounting': ' ', 'systems': ' ', 'costly': ' ', 'really': ' ', 'bad': ' ', 'parking': ' ', 'counselling': ' ', 'services': ' ', 'affairs': ' ', 'facilitate': ' ', 'complaints': ' ', 'long': ' ', 'service': ' ', 'maybe': ' ', 'limited': ' ', 'land': ' ', 'sure': ' ', 'uni': ' ', 'pure': ' ', 'academics': ' ', 'pocket': ' ', 'receiving': ' ', 'applicants': ' ', 'recipients': ' ', 'participants': ' ', 'opportunities': ' ', 'course': ' ', 'accreditation': ' ', 'assurance': ' ', 'qualifications': ' ', 'comfortable': ' ', 'city': ' ', 'access': ' ', 'attraction': ' ', 'assessment': ' ', 'includes': ' ', 'enthusiasts': ' ', 'scientific': ' ', 'clusters': ' ', 'medical': ' ', 'nursing': ' ', 'nutritional': ' ', 'legal': ' ', 'tightest': ' ', 'pharmaceutical': ' ', 'tightness': ' ', 'dental': ' ', 'relations': ' ', 'won': ' ', 'championship': ' ', 'hasanuddin': ' ', 'techno': ' ', 'fest': ' ', 'competition': ' ', 'succeeded': ' ', 'impressing': ' ', 'jury': ' ', 'idea': ' ', 'designing': ' ', 'mental': ' ', 'health': ' ', 'applications': ' ', 'suicide': ' ', 'prevention': ' ', 'ataraxia': ' ', 'artificial': ' ', 'intelligence': ' ', 'design': ' ', 'vision': ' ', 'golden': ' ', 'help': ' ', 'detect': ' ', 'attempt': ' ', 'behaviour': ' ', 'actions': ' ', 'leaves': ' ', 'pleasant': ' ', 'impression': ' ', 'pity': ' ', 'given': ' ', 'freedom': ' ', 'choice': ' ', 'speaking': ' ', 'silenced': ' ', 'filkom': ' ', 'members': ' ', 'killjoy': ' ', 'hackfest': ' ', 'ideathon': ' ', 'hackathon': ' ', 'developer': ' ', 'cl': ' ', 'forum': ' ', 'software': ' ', 'hardware': ' ', 'stuntion': ' ', 'android': ' ', 'focuses': ' ', 'handling': ' ', 'stunting': ' ', 'realise': ' ', 'sustainable': ' ', 'goals': ' ', 'point': ' ', 'features': ' ', 'check': ' ', 'convenience': ' ', 'checking': ' ', 'users': ' ', \"'\": ' ', 'children': ' ', 'independently': ' ', 'user': ' ', 'baby': ' ', 'entering': ' ', 'needed': ' ', 'answering': ' ', 'questions': ' ', 'food': ' ', 'funds': ' ', 'plic': ' ', 'consultation': ' ', 'experts': ' ', \"n't\": ' ', 'understand': ' ', 'names': ' ', 'published': ' ', 'participating': ' ', 'opportunity': ' ', 'develop': ' ', 'developing': ' ', 'technology': ' ', 'solutions': ' ', 'learn': ' ', 'more': ' ', 'society': ' ', 'required': ' ', 'create': ' ', 'innovative': ' ', 'solve': ' ', 'real': ' ', 'problems': ' ', 'environmental': ' ', 'situations': ' ', 'ability': ' ', 'want': ' ', 'title': ' ', 'delegate': ' ', 'paper': ' ', 'nanyang': ' ', 'technological': ' ', 'singapore': ' ', 'model': ' ', 'united': ' ', 'nations': ' ', 'ntu': ' ', 'mun': ' ', 'prestigious': ' ', 'conference': ' ', 'simulation': ' ', 'managed': ' ', 'advanced': ' ', 'delegates': ' ', 'felt': ' ', 'brought': ' ', 'friends': ' ', 'spirit': ' ', 'inspiration': ' ', 'evaluate': ' ', 'debating': ' ', 'diplomacy': ' ', 'next': ' ', 'increase': ' ', 'try': ' ', 'recognised': ' ', 'drive': ' ', 'large': ' ', 'challenge': ' ', 'top': ' ', 'mid': ' ', 'demonstration': ' ', 'topic': ' ', 'proud': ' ', 'interested': ' ', 'exaggerates': ' ', 'quantity': ' ', 'unimpressive': ' ', 'arrogant': ' ', 'politics': ' ', 'better': ' ', 'active': ' ', 'chasing': ' ', 'grades': ' ', 'overrated': ' ', 'fault': ' ', 'serious': ' ', 'unqualified': ' ', 'culture': ' ', 'shocked': ' ', 'problematic': ' ', 'arrogantly': ' ', 'classification': ' ', 'clear': ' ', 'parents': ' ', 'income': ' ', 'class': ' ', 'lab': ' ', 'equipment': ' ', 'inadequate': ' ', 'inside': ' ', 'match': ' ', 'appearance': ' ', 'difficult': ' ', 'admit': ' ', 'causing': ' ', 'narrow': ' ', 'leading': ' ', 'traffic': ' ', 'jams': ' ', 'excess': ' ', 'excessive': ' ', 'branding': ' ', 'media': ' ', 'advantage': ' ', 'knows': ' ', 'fortune': ' ', 'labs': ' ', 'competent': ' ', 'faculties': ' ', 'inequality': ' ', 'major': ' ', 'doubtful': ' ', 'corruption': ' ', 'collusion': ' ', 'nepotism': ' ', 'strong': ' ', 'disgusted': ' ', 'jargon': ' ', 'blue': ' ', 'full': ' ', 'asprak': ' ', 'afraid': ' ', 'hatters': ' ', 'honestly': ' ', 'learning': ' ', 'location': ' ', 'stingy': ' ', 'facilitating': ' ', 'bureaucracy': ' ', 'rectorate': ' ', 'library': ' ', 'ugly': ' ', 'thirsty': ' ', 'exposure': ' ', 'wkwkwk': ' ', 'flop': ' ', 'sorry': ' ', 'abandoned': ' ', 'think': ' ', 'public': ' ', 'sports': ' ', 'fields': ' ', 'lecturer': ' ', 'journey': ' ', 'ramadan': ' ', 'invites': ' ', 'return': ' ', 'contemplate': ' ', 'greatness': ' ', 'god': ' ', 'muslims': ' ', 'worship': ' ', 'without': ' ', 'permission': ' ', 'show': ' ', 'feeling': ' ', 'shame': ' ', 'wail': ' ', 'lowly': ' ', 'knocking': ' ', 'holy': ' ', 'door': ' ', 'forgiveness': ' ', 'family': ' ', 'involved': ' ', 'supplying': ' ', 'ready': ' ', 'mix': ' ', 'concrete': ' ', 'batching': ' ', 'industry': ' ', 'hell': ' ', 'closed': ' ', 'tightly': ' ', 'lust': ' ', 'rebels': ' ', 'professor': ' ', 'power': ' ', 'hadi': ' ', 'muslim': ' ', 'commitment': ' ', 'fasting': ' ', 'reminder': ' ', 'fall': ' ', 'group': ' ', 'prophet': ' ', 'muhammad': ' ', 'perform': ' ', 'sins': ' ', 'forgiven': ' ', 'lose': ' ', 'put': ' ', 'closely': ' ', 'shed': ' ', 'tears': ' ', 'soaked': ' ', 'prostrations': ' ', 'prayers': ' ', 'allah': ' ', 'equal': ' ', 'favor': ' ', 'heart': ' ', 'trembles': ' ', 'remembering': ' ', 'love': ' ', 'almighty': ' ', 'creator': ' ', 'eidulfitri': ' ', 'culmination': ' ', 'cleaning': ' ', 'blessings': ' ', 'shown': ' ', 'celebrated': ' ', 'reflection': ' ', 'miss': ' ', 'meeting': ' ', 'accordance': ' ', 'fasts': ' ', 'reasons': ' ', 'faith': ' ', 'hopes': ' ', 'reward': ' ', 'past': ' ', 'born': ' ', 'returning': ' ', 'fitrah': ' ', 'papar': ' ', 'reminded': ' ', 'let': ' ', 'feelings': ' ', 'desires': ' ', 'meet': ' ', 'disappear': ' ', 'bring': ' ', 'invaluable': ' ', 'runs': ' ', 'welcome': ' ', 'eid': ' ', 'fitr': ' ', 'holiday': ' ', 'celebration': ' ', 'community': ' ', 'prayer': ' ', 'closing': ' ', 'series': ' ', 'festivities': ' ', 'organized': ' ', 'ppa': ' ', 'religious': ' ', 'guidance': ' ', 'center': ' ', 'ahead': ' ', 'breaking': ' ', 'tausyiah': ' ', 'bazaar': ' ', 'blood': ' ', 'donor': ' ', 'tabligh': ' ', 'akbar': ' ', 'qurani': ' ', 'graduation': ' ', 'tahfizh': ' ', 'memorizing': ' ', 'qur': ' ', 'donations': ' ', 'orphans': ' ', 'presented': ' ', 'fill': ' ', 'essence': ' ', 'id': ' ', 'attended': ' ', 'leaders': ' ', 'lecturers': ' ', 'staff': ' ', 'studying': ' ', 'almet': ' ', 'usually': ' ', 'complain': ' ', 'hannover': ' ', 'messe': ' ', 'startup': ' ', 'axotic': ' ', 'farm': ' ', 'presents': ' ', 'fish': ' ', 'trading': ' ', 'fisheries': ' ', 'market': ' ', 'expansion': ' ', 'europe': ' ', 'downstream': ' ', 'research': ' ', 'fishery': ' ', 'products': ' ', 'ultra': ' ', 'recirculated': ' ', 'chiller': ' ', 'commodity': ' ', 'focus': ' ', 'axolotl': ' ', 'ambystoma': ' ', 'mexicanum': ' ', 'developed': ' ', 'basically': ' ', 'mexico': ' ', 'lives': ' ', 'tropical': ' ', 'climate': ' ', 'adaptive': ' ', 'bigger': ' ', 'salmon': ' ', 'previously': ' ', 'passed': ' ', 'competitions': ' ', 'received': ' ', 'silver': ' ', 'medal': ' ', 'pimnas': ' ', 'xxxiv': ' ', 'awards': ' ', 'utu': ' ', 'planning': ' ', 'annual': ' ', 'industrial': ' ', 'exhibition': ' ', 'deutsche': ' ', 'ag': ' ', 'dmag': ' ', 'cooperating': ' ', 'partner': ' ', 'countries': ' ', 'trusted': ' ', 'ministries': ' ', '/': ' ', 'institutions': ' ', 'pavilion': ' ', 'square': ' ', 'meters': ' ', 'exam': ' ', 'reached': ' ', 'increased': ' ', 'compared': ' ', 'holding': ' ', 'wave': ' ', 'computers': ' ', 'rooms': ' ', 'run': ' ', 'smoothly': ' ', 'netted': ' ', 'talents': ' ', 'capable': ' ', 'reviewing': ' ', 'advertisement': ' ', 'reviewed': ' ', 'locations': ' ', 'agricultural': ' ', 'economics': ' ', 'visited': ' ', 'representatives': ' ', 'committee': ' ', 'snpmb': ' ', 'tri': ' ', 'budi': ' ', 'santoso': ' ', 'confessed': ' ', 'assessed': ' ', 'carefully': ' ', 'entrance': ' ', 'asked': ' ', 'easily': ' ', 'transit': ' ', 'room': ' ', 'neat': ' ', 'importantly': ' ', 'soothing': ' ', 'surabaya': ' ', 'electronics': ' ', 'polytechnic': ' ', 'chancellor': ' ', 'imam': ' ', 'applies': ' ', 'protocols': ' ', 'provisions': ' ', 'weeks': ' ', 'cases': ' ', 'ensure': ' ', 'healthy': ' ', 'thermal': ' ', 'guns': ' ', 'temperature': ' ', 'detection': ' ', 'monitors': ' ', 'read': ' ', 'ren': ' ', 'win': ' ', 'chemical': ' ', 'reaction': ' ', 'car': ' ', 'petition': ' ', 'villages': ' ', 'village': ' ', 'atomic': ' ', 'cher': ' ', 'achieved': ' ', 'nd': ' ', 'winner': ' ', 'passing': ' ', 'selections': ' ', 'prototype': ' ', 'concepts': ' ', 'teams': ' ', 'respective': ' ', 'prototypes': ' ', 'judges': ' ', 'undergraduate': ' ', 'institute': ' ', 'aims': ' ', 'demonstrate': ' ', 'reactions': ' ', 'race': ' ', 'stage': ' ', 'calculate': ' ', 'stop': ' ', 'advance': ' ', 'trials': ' ', 'atom': ' ', 'nawasena': ' ', 'carries': ' ', 'concept': ' ', 'pressurized': ' ', 'filtered': ' ', 'air': ' ', 'regulator': ' ', 'filter': ' ', 'moves': ' ', 'piston': ' ', 'assisted': ' ', 'mechanical': ' ', 'roller': ' ', 'valve': ' ', 'moving': ' ', 'produce': ' ', 'derived': ' ', 'decomposition': ' ', 'comes': ' ', 'hydrogen': ' ', 'peroxide': ' ', 'catalyst': ' ', 'accelerate': ' ', 'echoed': ' ', 'act': ' ', 'podium': ' ', 'lap': ' ', 'chem': ' ', 'achieving': ' ', 'carrying': ' ', 'cars': ' ', 'racing': ' ', 'chemicals': ' ', 'excelled': ' ', 'finalist': ' ', 'superiority': ' ', 'move': ' ', 'generated': ' ', 'collaborating': ' ', 'japan': ' ', 'nagoya': ' ', 'initiated': ' ', 'establishment': ' ', 'robotics': ' ', 'data': ' ', 'material': ' ', 'collaborations': ' ', 'innovation': ' ', 'consider': ' ', 'important': ' ', 'partners': ' ', 'collaboration': ' ', 'grow': ' ', 'focused': ' ', 'herbal': ' ', 'novanto': ' ', 'yudistira': ' ', 'applied': ' ', 'molecular': ' ', 'molecules': ' ', 'sophistication': ' ', 'explore': ' ', 'beneficial': ' ', 'sector': ' ', 'waseda': ' ', 'making': ' ', 'humanoid': ' ', 'robots': ' ', 'king': ' ', 'ijaya': ' ', 'established': ' ', 'choosing': ' ', 'ranked': ' ', 'star': ' ', 'version': ' ', 'directed': ' ', 'reputable': ' ', 'journals': ' ', 'encourage': ' ', 'cooperated': ' ', 'chukyo': ' ', 'keio': ' ', 'follow': ' ', 'reads': ' ', 'spotlight': ' ', 'recent': ' ', 'care': ' ', 'creation': ' ', 'initially': ' ', 'sparked': ' ', 'claimed': ' ', 'difficulty': ' ', 'treatment': ' ', 'tried': ' ', 'resolved': ' ', 'initial': ' ', 'physically': ' ', 'mentally': ' ', 'ranging': ' ', 'disorder': ' ', 'articles': ' ', 'videos': ' ', 'sufferers': ' ', 'disorders': ' ', 'feature': ' ', 'emergency': ' ', 'severe': ' ', 'communicating': ' ', 'psychiatrist': ' ', 'psychologist': ' ', 'chat': ' ', 'video': ' ', 'phone': ' ', 'give': ' ', 'psychologists': ' ', 'psychiatrists': ' ', 'facial': ' ', 'expressions': ' ', 'designed': ' ', 'patent': ' ', 'results': ' ', 'satisfying': ' ', 'gold': ' ', 'investor': ' ', 'wyie': ' ', 'category': ' ', 'asian': ' ', 'invention': ' ', 'award': ' ', 'executive': ' ', 'dismissed': ' ', 'accused': ' ', 'muzzling': ' ', 'democratization': ' ', 'president': ' ', 'dismissal': ' ', 'summoning': ' ', 'caused': ' ', 'dismiss': ' ', 'trigger': ' ', 'protested': ' ', 'awarding': ' ', 'titles': ' ', 'representative': ' ', 'council': ' ', 'spoke': ' ', 'freezing': ' ', 'wr': ' ', 'action': ' ', 'considered': ' ', 'sovereignty': ' ', 'prohibition': ' ', 'inhibiting': ' ', 'condemned': ' ', 'threatened': ' ', 'removal': ' ', 'reject': ' ', 'attitude': ' ', 'freezes': ' ', 'inhibits': ' ', 'administrative': ' ', 'financial': ' ', 'rights': ' ', 'oriented': ' ', 'fully': ' ', 'facilitated': ' ', 'orientation': ' ', 'stopping': ' ', 'muzzled': ' ', 'proof': ' ', 'currently': ' ', 'classified': ' ', 'ukm': ' ', 'units': ' ', 'legislative': ' ', 'supervisory': ' ', 'functions': ' ', 'legitimacy': ' ', 'sectors': ' ', 'completely': ' ', 'element': ' ', 'pkkmb': ' ', 'irregularities': ' ', 'transparency': ' ', 'fraud': ' ', 'case': ' ', 'deputy': ' ', 'chairman': ' ', 'generation': ' ', 'supervision': ' ', 'oversees': ' ', 'role': ' ', 'authority': ' ', 'formal': ' ', 'rejects': ' ', 'forms': ' ', 'suppression': ' ', 'democracy': ' ', 'asking': ' ', 'restore': ' ', 'bringing': ' ', 'congress': ' ', 'denied': ' ', 'alleged': ' ', 'freeze': ' ', 'exist': ' ', 'discussed': ' ', 'motivated': ' ', 'demonstrations': ' ', 'criticism': ' ', 'pancasila': ' ', 'conducted': ' ', 'current': ' ', 'revealed': ' ', 'offer': ' ', 'reconcile': ' ', 'intermediary': ' ', 'rejected': ' ', 'cowardice': ' ', 'reply': ' ', 'invited': ' ', 'engage': ' ', 'debate': ' ', 'responded': ' ', 'request': ' ', 'office': ' ', 'waiting': ' ', 'apology': ' ', 'statement': ' ', 'publicly': ' ', 'apologize': ' ', 'sign': ' ', 'integrity': ' ', 'pact': ' ', 'inaugurated': ' ', 'urban': ' ', 'rachmat': ' ', 'kriyantono': ' ', 'oration': ' ', 'excellence': ' ', 'plus': ' ', 'useful': ' ', 'practices': ' ', 'responsible': ' ', 'supporting': ' ', 'digital': ' ', 'era': ' ', 'influential': ' ', 'managerial': ' ', 'convey': ' ', 'aspirations': ' ', 'lower': ' ', 'levels': ' ', 'conveyed': ' ', 'raised': ' ', 'principles': ' ', 'accommodation': ' ', 'advocacy': ' ', 'recommended': ' ', 'balanced': ' ', 'perceptions': ' ', 'roles': ' ', 'synchronization': ' ', 'cross': ' ', 'degradation': ' ', 'profession': ' ', 'strengthen': ' ', 'adopting': ' ', 'dissertation': ' ', 'entitled': ' ', 'wise': ' ', 'plenary': ' ', 'technocratic': ' ', 'balances': ' ', 'spiritual': ' ', 'discuss': ' ', 'pkp': ' ', 'balancing': ' ', 'slightly': ' ', 'integrates': ' ', 'socio': ' ', 'dimensions': ' ', 'sees': ' ', 'welfare': ' ', 'built': ' ', 'phases': ' ', 'poverty': ' ', 'alleviation': ' ', 'resilience': ' ', 'livability': ' ', 'happiness': ' ', 'surjono': ' ', 'strength': ' ', 'responsive': ' ', 'essential': ' ', 'godly': ' ', 'nation': ' ', 'broad': ' ', 'weakness': ' ', 'measure': ' ', 'alone': ' ', 'set': ' ', 'standards': ' ', 'pluralistic': ' ', 'complex': ' ', 'organism': ' ', 'humans': ' ', 'dwellers': ' ', 'capital': ' ', 'physical': ' ', 'perspective': ' ', 'follows': ' ', 'cycle': ' ', 'strengthening': ' ', 'psychological': ' ', 'admitted': ' ', 'intimidation': ' ', 'fighting': ' ', 'silencing': ' ', 'lkm': ' ', 'unit': ' ', 'beginning': ' ', 'resistance': ' ', 'threats': ' ', 'discourage': ' ', 'fyi': ' ', 'infrastructure': ' ', 'uneven': ' ', 'rarely': ' ', 'sycophants': ' ', 'bureaucrats': ' ', 'talked': ' ', 'son': ' ', 'ancurur': ' ', 'election': ' ', 'pp': ' ', 'lazy': ' ', 'complaining': ' ', 'absent': ' ', 'toxic': ' ', 'sexual': ' ', 'neglected': ' ', 'juve': ' ', 'henson': ' ', 'underwent': ' ', 'unexpectedly': ' ', 'bidikmisi': ' ', 'funded': ' ', 'majoring': ' ', 'japanese': ' ', 'literature': ' ', 'cumlaude': ' ', 'humanities': ' ', 'occupy': ' ', 'followed': ' ', 'coordinating': ' ', 'ministry': ' ', 'oversee': ' ', 'revitalization': ' ', 'training': ' ', 'presidential': ' ', 'regulation': ' ', 'launched': ' ', 'competence': ' ', 'coordination': ' ', 'auspices': ' ', 'kemendikbudristek': ' ', 'labor': ' ', 'republic': ' ', 'kemnaker': ' ', 'unity': ' ', 'certification': ' ', 'bnsp': ' ', 'potential': ' ', 'lacking': ' ', 'lack': ' ', 'links': ' ', 'backwards': ' ', 'ppks': ' ', 'finished': ' ', 'agency': ' ', 'silent': ' ', 'investigate': ' ', 'safe': ' ', 'offenders': ' ', 'investigated': ' ', 'victims': ' ', 'solution': ' ', 'promising': ' ', 'taking': ' ', 'concerned': ' ', 'perpetrator': ' ', 'fraudster': ' ', 'wake': ' ', 'ultksp': ' ', 'wanted': ' ', 'violence': ' ', 'useless': ' ', 'posters': ' ', 'pasted': ' ', 'trash': ' ', 'dare': ' ', 'speak': ' ', 'handled': ' ', 'badly': ' ', 'rotten': ' ', 'matter': ' ', 'duty': ' ', 'protecting': ' ', 'predators': ' ', 'criminal': ' ', 'acts': ' ', 'girl': ' ', 'wants': ' ', 'ouch': ' ', 'suck': ' ', 'aware': ' ', 'visible': ' ', 'charge': ' ', 'perverts': ' ', 'reported': ' ', 'bem': ' ', 'apathetic': ' ', 'continuation': ' ', 'blindly': ' ', 'victim': ' ', 'child': ' ', 'immediately': ' ', 'busy': ' ', 'incompetent': ' ', 'scope': ' ', 'resources': ' ', 'utilization': ' ', 'banking': ' ', 'director': ' ', 'bank': ' ', 'muamalat': ' ', 'establish': ' ', 'literacy': ' ', 'inclusion': ' ', 'intermediaries': ' ', 'committed': ' ', 'index': ' ', 'islamic': ' ', 'finance': ' ', 'accommodate': ' ', 'utilized': ' ', 'customer': ' ', 'customers': ' ', 'cash': ' ', 'cms': ' ', 'madina': ' ', 'giro': ' ', 'savings': ' ', 'deposits': ' ', 'located': ' ', 'utilize': ' ', 'virtual': ' ', 'biller': ' ', 'payments': ' ', 'employee': ' ', 'benefit': ' ', 'forestry': ' ', 'signed': ' ', 'agreements': ' ', 'document': ' ', 'derivative': ' ', 'memorandum': ' ', 'understanding': ' ', 'dharma': ' ', 'directorate': ' ', 'conservation': ' ', 'extension': ' ', 'partnership': ' ', 'importance': ' ', 'creating': ' ', 'merely': ' ', 'monotonous': ' ', 'procedures': ' ', 'processes': ' ', 'routines': ' ', 'central': ' ', 'regional': ' ', 'agencies': ' ', 'parties': ' ', 'benefits': ' ', 'impacts': ' ', 'performance': ' ', 'outputs': ' ', 'produced': ' ', 'governance': ' ', 'expected': ' ', 'jointly': ' ', 'representing': ' ', 'asia': ' ', 'games': ' ', 'riyadh': ' ', 'saudi': ' ', 'arabia': ' ', 'compete': ' ', 'savate': ' ', 'sport': ' ', 'upcoming': ' ', 'biggest': ' ', 'highest': ' ', 'suppose': ' ', 'history': ' ', 'bat': ' ', 'brings': ' ', 'athletes': ' ', 'branches': ' ', 'martial': ' ', 'arts': ' ', 'taekwondo': ' ', 'karate': ' ', 'qualify': ' ', 'th': ' ', 'represent': ' ', 'kg': ' ', 'senior': ' ', 'brilliant': ' ', 'athlete': ' ', 'marks': ' ', 'success': ' ', 'rafie': ' ', 'kempo': ' ', 'basketball': ' ', 'championships': ' ', 'shell': ' ', 'eco': ' ', 'marathon': ' ', 'apatte': ' ', 'energy': ' ', 'efficient': ' ', 'explains': ' ', 'obesity': ' ', 'factors': ' ', 'basilmu': ' ', 'professors': ' ', 'came': ' ', 'bioenergy': ' ', 'semi': ' ', 'continuous': ' ', 'supercritical': ' ', 'reactor': ' ', 'biodiesel': ' ', 'gasoline': ' ', 'diesel': ' ', 'oil': ' ', 'fossil': ' ', 'materials': ' ', 'widely': ' ', 'fuel': ' ', 'specifications': ' ', 'machines': ' ', 'availability': ' ', 'unfriendly': ' ', 'contribute': ' ', 'exhaust': ' ', 'gases': ' ', 'guys': ' ', 'boys': ' ', 'fuels': ' ', 'replacing': ' ', 'renewable': ' ', 'necessity': ' ', 'realized': ' ', 'bioethanol': ' ', 'conversion': ' ', 'biomass': ' ', 'explanation': ' ', 'enhancement': ' ', 'alternative': ' ', 'resolving': ' ', 'china': ' ', 'sea': ' ', 'dispute': ' ', 'leniency': ' ', 'regulatory': ' ', 'combat': ' ', 'cartels': ' ', 'shadow': ' ', 'realism': ' ', 'approach': ' ', 'constitutional': ' ', 'blossomed': ' ', 'husband': ' ', 'wife': ' ', 'ump': ' ', 'swear': ' ', 'ft': ' ', 'cute': ' ', 'kingdom': ' ', 'salty': ' ', 'afford': ' ', 'private': ' ', 'campuses': ' ', 'okay': ' ', 'forced': ' ', 'le': ' ', 'integrated': ' ', 'agriculture': ' ', 'banyuwangi': ' ', 'nice': ' ', 'clinic': ' ', 'free': ' ', 'centre': ' ', 'gym': ' ', 'independence': ' ', 'speed': ' ', 'please': ' ', 'accredit': ' ', 'father': ' ', 'proposal': ' ', 'imagine': ' ', 'friend': ' ', 'ipi': ' ', 'subject': ' ', 'institutional': ' ', 'netizens': ' ', 'compare': ' ', 'unhas': ' ', 'tourism': ' ', 'bgtt': ' ', 'responding': ' ', 'tweets': ' ', 'stating': ' ', 'objections': ' ', 'apply': ' ', 'waivers': ' ', 'nominal': ' ', 'declared': ' ', 'coloured': ' ', 'hilarious': ' ', 'prof': ' ', 'casually': ' ', 'selfie': ' ', 'photo': ' ', 'styles': ' ', 'graduates': ' ', 'certificates': ' ', 'interesting': ' ', 'moment': ' ', 'hand': ' ', 'gestures': ' ', 'code': ' ', 'style': ' ', 'fortunately': ' ', 'continuing': ' ', 'spread': ' ', 'smiles': ' ', 'wishes': ' ', 'signals': ' ', 'showing': ' ', 'eccentric': ' ', 'uploaded': ' ', 'talk': ' ', 'praised': ' ', 'willing': ' ', 'serve': ' ', 'happy': ' ', 'moments': ' ', 'took': ' ', 'procession': ' ', 'dentistry': ' ', 'inauguration': ' ', 'caries': ' ', 'diseases': ' ', 'global': ' ', 'burden': ' ', 'disease': ' ', 'adversely': ' ', 'affects': ' ', 'oral': ' ', 'implications': ' ', 'chronic': ' ', 'growth': ' ', 'salivary': ' ', 'secretion': ' ', 'risk': ' ', 'delay': ' ', 'eruption': ' ', 'permanent': ' ', 'teeth': ' ', 'dentin': ' ', 'liners': ' ', 'protect': ' ', 'pulp': ' ', 'bacterial': ' ', 'infection': ' ', 'pretend': ' ', 'task': ' ', 'force': ' ', 'response': ' ', 'slow': ' ', 'sciences': ' ', 'appreciate': ' ', 'birth': ' ', 'ongoing': ' ', 'basis': ' ', 'almost': ' ', 'confirmed': ' ', 'promised': ' ', 'investment': ' ', 'bahlil': ' ', 'hockey': ' ', 'lifetime': ' ', 'scholarships': ' ', '&': ' ', 'employment': ' ', 'contracts': ' ', 'question': ' ', 'sessions': ' ', 'fairuz': ' ', 'sarah': ' ', 'kamila': ' ', 'mipa': ' ', 'youngest': ' ', 'graduated': ' ', 'age': ' ', 'quickly': ' ', 'motivation': ' ', 'maximum': ' ', 'credits': ' ', 'laboratory': ' ', 'fourth': ' ', 'forgetting': ' ', 'keep': ' ', 'defending': ' ', 'anticancer': ' ', 'effects': ' ', 'ethanol': ' ', 'extracts': ' ', 'sembung': ' ', 'legi': ' ', 'blumea': ' ', 'balsamifera': ' ', 'breast': ' ', 'cancer': ' ', 'cells': ' ', 'earlier': ' ', 'vitro': ' ', 'exploration': ' ', 'treating': ' ', 'cell': ' ', 'cultures': ' ', 'organizers': ' ', 'entrepreneurial': ' ', 'academy': ' ', 'groups': ' ', 'build': ' ', 'obligations': ' ', 'innovations': ' ', 'businesses': ' ', 'umkm': ' ', 'actors': ' ', 'competing': ' ', 'dropping': ' ', 'micro': ' ', 'collaborate': ' ', 'dream': ' ', 'childhood': ' ', 'pursued': ' ', 'thanks': ' ', 'mobility': ' ', 'pessimistic': ' ', 'trenggalek': ' ', 'jihan': ' ', 'dreamed': ' ', 'school': ' ', 'discouraged': ' ', 'horizons': ' ', 'identity': ' ', 'citizen': ' ', 'helpful': ' ', 'prioritise': ' ', 'classes': ' ', 'night': ' ', 'finishing': ' ', 'lecture': ' ', 'edurank': ' ', 'america': ' ', 'conducts': ' ', 'assessments': ' ', 'reputation': ' ', 'routinely': ' ', 'releases': ' ', 'continent': ' ', 'eighth': ' ', 'requirement': ' ', 'discussion': ' ', 'involve': ' ', 'permendikbudristek': ' ', 'meets': ' ', 'outcomes': ' ', 'implemented': ' ', 'implement': ' ', 'project': ' ', 'curriculum': ' ', 'relevant': ' ', 'final': ' ', 'assignment': ' ', 'mandatory': ' ', 'policies': ' ', 'stipulated': ' ', 'policy': ' ', 'regulated': ' ', 'wider': ' ', 'determine': ' ', 'suitable': ' ', 'options': ' ', 'terms': ' ', 'fulfilling': ' ', 'mentioning': ' ', 'handed': ' ', 'assignments': ' ', 'introduce': ' ', 'art': ' ', 'language': ' ', 'foreign': ' ', 'egypt': ' ', 'korea': ' ', 'england': ' ', 'globalisation': ' ', 'dealing': ' ', 'advances': ' ', 'increasingly': ' ', 'intercultural': ' ', 'interactions': ' ', 'claims': ' ', 'flattered': ' ', 'cultural': ' ', 'wealth': ' ', 'hamamah': ' ', 'deeply': ' ', 'view': ' ', 'interaction': ' ', 'bridges': ' ', 'eyes': ' ', 'pretty': ' ', 'game': ' ', 'corner': ' ', 'spend': ' ', 'hoping': ' ', 'hours': ' ', 'recreation': ' ', 'hobbies': ' ', 'socialise': ' ', 'developers': ' ', 'supports': ' ', 'mobile': ' ', 'multimedia': ' ', 'mgm': ' ', 'relaxing': ' ', 'hone': ' ', 'playing': ' ', 'togetherness': ' ', 'younger': ' ', 'gaming': ' ', 'rakyat': ' ', 'bri': ' ', 'floor': ' ', 'counter': ' ', 'equipped': ' ', 'play': ' ', 'station': ' ', 'xbox': ' ', 'pc': ' ', 'asus': ' ', 'rog': ' ', 'pamper': ' ', 'equally': ' ', 'verbally': ' ', 'harassed': ' ', 'witnesses': ' ', 'evidence': ' ', 'specifically': ' ', 'playstation': ' ', 'today': ' ', 'sefakultas': ' ', 'recreational': ' ', 'purposes': ' ', 'ideology': ' ', 'bpip': ' ', 'inspiring': ' ', 'works': ' ', 'facing': ' ', 'abolition': ' ', 'sidi': ' ', 'lpg': ' ', 'resulted': ' ', 'prices': ' ', 'fuelled': ' ', 'stoves': ' ', 'charcoal': ' ', 'raw': ' ', 'pieces': ' ', 'wood': ' ', 'palm': ' ', 'kernel': ' ', 'shells': ' ', 'hazelnut': ' ', 'processed': ' ', 'briquettes': ' ', 'pellets': ' ', 'removed': ' ', 'stove': ' ', 'benefited': ' ', 'nurhuda': ' ', 'drin': ' ', 'fusion': ' ', 'drn': ' ', 'commemoration': ' ', 'icons': ' ', 'individuals': ' ', 'communities': ' ', 'da': ' ', 'lift': ' ', 'merger': ' ', 'wifi': ' ', 'garden': ' ', 'plugs': ' ', 'peeled': ' ', 'stun': ' ', 'renovate': ' ', 'enlarged': ' ', 'expanded': ' ', 'pilot': ' ', 'table': ' ', 'bag': ' ', 'fan': ' ', 'hot': ' ', 'bit': ' ', 'crowded': ' ', 'noisy': ' ', 'modernise': ' ', 'possible': ' ', 'downstairs': ' ', 'borrowed': ' ', 'books': ' ', 'returned': ' ', 'chairs': ' ', 'lights': ' ', 'paint': ' ', 'reversed': ' ', 'weekends': ' ', 'replaced': ' ', 'scary': ' ', 'laptop': ' ', 'desk': ' ', 'chair': ' ', 'loose': ' ', 'dust': ' ', 'tables': ' ', 'poor': ' ', 'buy': ' ', 'coffee': ' ', 'cafe': ' ', 'boarding': ' ', 'house': ' ', 'lie': ' ', 'longer': ' ', 'afternoon': ' ', 'leaving': ' ', 'conditioning': ' ', 'spacious': ' ', 'smell': ' ', 'musty': ' ', 'wall': ' ', 'moulded': ' ', 'covered': ' ', 'wallpaper': ' ', 'museum': ' ', 'english': ' ', 'updated': ' ', 'site': ' ', 'change': ' ', 'gazebo': ' ', 'dead': ' ', 'heard': ' ', 'fk': ' ', 'textbooks': ' ', 'older': ' ', 'interior': ' ', 'schedule': ' ', 'curfew': ' ', 'half': ' ', 'opening': ' ', 'maleman': ' ', 'dizzy': ' ', 'find': ' ', 'confused': ' ', 'search': ' ', 'repair': ' ', 'bathroom': ' ', 'messy': ' ', 'rules': ' ', 'book': ' ', 'extended': ' ', 'operating': ' ', 'upstairs': ' ', 'quite': ' ', 'complicated': ' ', 'luggage': ' ', 'switched': ' ', 'transparent': ' ', 'surprising': ' ', 'novelles': ' ', 'cooled': ' ', 'midwifery': ' ', 'latest': ' ', 'develops': ' ', 'profile': ' ', 'surya': ' ', 'buana': ' ', 'kota': ' ', 'elementary': ' ', 'suddenly': ' ', 'die': ' ', 'environmentally': ' ', 'household': ' ', 'corn': ' ', 'cobs': ' ', 'straws': ' ', 'pkm': ' ', 'ristekdikti': ' ', 'edible': ' ', 'plastic': ' ', 'straw': ' ', 'teach': ' ', 'female': ' ', 'rofiaty': ' ', 'requires': ' ', 'adapt': ' ', 'changes': ' ', 'internally': ' ', 'externally': ' ', 'update': ' ', 'despite': ' ', 'breakthroughs': ' ', 'survive': ' ', 'competitiveness': ' ', 'flexible': ' ', 'key': ' ', 'word': ' ', 'optimum': ' ', 'remain': ' ', 'fishing': ' ', 'fleet': ' ', 'controlled': ' ', 'effectively': ' ', 'collected': ' ', 'population': ' ', 'coastal': ' ', 'areas': ' ', 'depend': ' ', 'stakeholders': ' ', 'manage': ' ', 'marine': ' ', 'components': ' ', 'ecology': ' ', 'biophysical': ' ', 'fishers': ' ', 'processors': ' ', 'earthquake': ' ', 'lamp': ' ', 'laga': ' ', 'automatic': ' ', 'warning': ' ', 'prone': ' ', 'winners': ' ', 'kemendibudristek': ' ', 'alarm': ' ', 'normally': ' ', 'sleeping': ' ', 'warm': ' ', 'white': ' ', 'trapezoidal': ' ', 'adds': ' ', 'aesthetics': ' ', 'uses': ' ', 'rechargeable': ' ', 'battery': ' ', 'mah': ' ', 'lit': ' ', 'recharge': ' ', 'zone': ' ', 'tool': ' ', 'prism': ' ', 'shaped': ' ', 'add': ' ', 'li': ' ', 'ion': ' ', 'batteries': ' ', 'recharged': ' ', 'save': ' ', 'costs': ' ', 'light': ' ', 'included': ' ', 'rep': ' ', 'lik': ' ', 'marketing': ' ', 'selling': ' ', 'fight': ' ', 'upgrade': ' ', 'valid': ' ', 'type': ' ', 'diabetes': ' ', 'mellitus': ' ', 'glucosipp': ' ', 'invasive': ' ', 'glucometer': ' ', 'insulin': ' ', 'pump': ' ', 'glucagon': ' ', 'copyright': ' ', 'intellectual': ' ', 'property': ' ', 'hki': ' ', 'issued': ' ', 'djki': ' ', 'sugar': ' ', 'tools': ' ', 'require': ' ', 'lancet': ' ', 'device': ' ', 'strips': ' ', 'bracelet': ' ', 'ppg': ' ', 'sensors': ' ', 'utilizing': ' ', 'spectroscopic': ' ', 'methods': ' ', 'fairly': ' ', 'usage': ' ', 'wearing': ' ', 'logging': ' ', 'monitor': ' ', 'anytime': ' ', 'hormone': ' ', 'pumps': ' ', 'overcome': ' ', 'exists': ' ', 'po': ' ', 'presence': ' ', 'diabetics': ' ', 'tangible': ' ', 'overcoming': ' ', 'postgraduate': ' ', 'ceremony': ' ', 'yoana': ' ', 'ervina': ' ', 'febriyanti': ' ', 'psdku': ' ', 'kediri': ' ', 'satisfactory': ' ', 'cumulative': ' ', 'peers': ' ', 'write': ' ', 'fluently': ' ', 'childish': ' ', 'classmates': ' ', 'consequence': ' ', 'faced': ' ', 'missed': ' ', 'demands': ' ', 'lessons': ' ', 'mature': ' ', 'communicate': ' ', 'frida': ' ', 'officially': ' ', 'laude': ' ', 'predicate': ' ', 'familiar': ' ', 'call': ' ', 'turns': ' ', 'figure': ' ', 'surprises': ' ', 'duta': ' ', 'wisata': ' ', 'ponorogo': ' ', 'district': ' ', 'kakang': ' ', 'batik': ' ', 'ambassador': ' ', 'apbj': ' ', 'dekranasda': ' ', 'province': ' ', 'surprise': ' ', 'merce': ' ', 'companies': ' ', 'operations': ' ', 'analyst': ' ', 'obtained': ' ', 'perfect': ' ', 'extraordinary': ' ', 'significant': ' ', 'professional': ' ', 'abilities': ' ', 'qualified': ' ', 'press': ' ', 'perpusnas': ' ', 'publisher': ' ', 'smart': ' ', 'economy': ' ', 'calcium': ' ', 'oxalate': ' ', 'porang': ' ', 'processing': ' ', 'amorpho': ' ', 'coagulation': ' ', 'tech': ' ', 'rise': ' ', 'surge': ' ', 'contains': ' ', 'dangerous': ' ', 'allowed': ' ', 'discharged': ' ', 'accumulation': ' ', 'sedimentation': ' ', 'soil': ' ', 'pollution': ' ', 'shobri': ' ', 'electrocoagulation': ' ', 'extraction': ' ', 'method': ' ', 'purification': ' ', 'filtration': ' ', 'chamber': ' ', 'internet': ' ', 'sensor': ' ', 'realtime': ' ', 'creative': ' ', 'machine': ' ', 'convert': ' ', 'fischer': ' ', 'tropsch': ' ', 'supported': ' ', 'step': ' ', 'sources': ' ', 'integration': ' ', 'optimize': ' ', 'algorithms': ' ', 'automatically': ' ', 'adjust': ' ', 'probarameters': ' ', 'efficiency': ' ', 'yield': ' ', 'conventional': ' ', 'pave': ' ', 'similar': ' ', 'technologies': ' ', 'dependence': ' ', 'chinese': ' ', 'betel': ' ', 'leaf': ' ', 'extract': ' ', 'peperomia': ' ', 'pellucida': ' ', 'domestic': ' ', 'contain': ' ', 'antioxidants': ' ', 'anti': ' ', 'aging': ' ', 'agent': ' ', 'cosmeceuticals': ' ', 'cosmeceutical': ' ', 'moisturizer': ' ', 'formulations': ' ', 'simplisia': ' ', 'nanostructured': ' ', 'lipid': ' ', 'carrier': ' ', 'nlc': ' ', 'ingredients': ' ', 'antioxidant': ' ', 'premature': ' ', 'preparation': ' ', 'therapeutic': ' ', 'skin': ' ', 'preparations': ' ', 'formulation': ' ', 'marketed': ' ', 'department': ' ', 'competed': ' ', 'belt': ' ', 'infrared': ' ', 'serves': ' ', 'relieve': ' ', 'menstrual': ' ', 'pain': ' ', 'women': ' ', 'adding': ' ', 'fashionable': ' ', 'menstruation': ' ', 'prioritizing': ' ', 'function': ' ', 'relieving': ' ', 'comfortably': ' ', 'worn': ' ', 'accessory': ' ', 'utilizes': ' ', 'heat': ' ', 'abdominal': ' ', 'connected': ' ', 'iot': ' ', 'refers': ' ', 'network': ' ', 'objects': ' ', 'pm': ' ', 'dropout': ' ', 'rate': ' ', 'cbe': ' ', 'packs': ' ', 'consciousness': ' ', 'interactive': ' ', 'sites': ' ', 'smartcbe': ' ', 'meditation': ' ', 'regularly': ' ', 'awareness': ' ', 'tobacco': ' ', 'ultrasound': ' ', 'reveal': ' ', 'assuming': ' ', 'animals': ' ', 'sounds': ' ', 'sick': ' ', 'sound': ' ', 'recording': ' ', 'showed': ' ', 'stress': ' ', 'biotic': ' ', 'phytophthora': ' ', 'nicotianae': ' ', 'structural': ' ', 'transport': ' ', 'great': ' ', 'recognize': ' ', 'damage': ' ', 'mangrove': ' ', 'prevented': ' ', 'massively': ' ', 'attacked': ' ', 'malignant': ' ', 'destruction': ' ', 'vessels': ' ', 'stem': ' ', 'roots': ' ', 'stalks': ' ', 'block': ' ', 'flow': ' ', 'water': ' ', 'nutrients': ' ', 'broadly': ' ', 'inhibit': ' ', 'photosynthesis': ' ', 'dies': ' ', 'worse': ' ', 'farmers': ' ', 'crop': ' ', 'failure': ' ', 'neuvilette': ' ', 'dki': ' ', 'weather': ' ', 'modification': ' ', 'tmc': ' ', 'modify': ' ', 'specific': ' ', 'desired': ' ', 'sunlight': ' ', 'unpollution': ' ', 'clean': ' ', 'pollutants': ' ', 'producing': ' ', 'solar': ' ', 'panels': ' ', 'crisis': ' ', 'cleans': ' ', 'produces': ' ', 'intelligent': ' ', 'devices': ' ', 'regulate': ' ', 'guided': ' ', 'mochammad': ' ', 'roviq': ' ', 'sp': ' ', 'mp': ' ', 'security': ' ', 'mathematics': ' ', 'oyster': ' ', 'electric': ' ', 'vehicle': ' ', 'oxide': ' ', 'content': ' ', 'vehicles': ' ', 'exact': ' ', 'abundant': ' ', 'evaluation': ' ', 'effective': ' ', 'optimized': ' ', 'discovered': ' ', 'finding': ' ', 'crossta': ' ', 'baterry': ' ', 'surprised': ' ', 'male': ' ', 'assessing': ' ', 'mixed': ' ', 'physique': ' ', 'beautiful': ' ', 'choir': ' ', 'ftp': ' ', 'busan': ' ', 'choral': ' ', 'festival': ' ', 'prize': ' ', 'pop': ' ', 'acapella': ' ', ';': ' ', 'diploma': ' ', 'acappella': ' ', 'ethnic': ' ', 'floice': ' ', 'amaze': ' ', 'outperform': ' ', 'philippines': ' ', 'awarded': ' ', 'medals': ' ', 'grumpy': ' ', 'guarding': ' ', 'crazy': ' ', 'rude': ' ', 'traumatized': ' ', 'guard': ' ', 'anymore': ' ', 'annoyed': ' ', 'absentee': ' ', 'leave': ' ', 'yelled': ' ', 'cheating': ' ', 'racist': ' ', 'repeatedly': ' ', 'respond': ' ', 'patient': ' ', 'guards': ' ', 'arbitrary': ' ', 'cant': ' ', 'bros': ' ', 'receptionist': ' ', 'secretary': ' ', 'dean': ' ', 'angrily': ' ', 'shouted': ' ', 'reprimand': ' ', 'employees': ' ', 'thank': ' ', 'angry': ' ', 'wrong': ' ', 'pants': ' ', 'feet': ' ', 'roundabout': ' ', 'kind': ' ', 'likes': ' ', 'practicum': ' ', 'parked': ' ', 'scolded': ' ', 'saying': ' ', 'nothing': ' ', 'manners': ' ', 'true': ' ', 'went': ' ', 'cafeteria': ' ', 'court': ' ', 'context': ' ', 'lady': ' ', 'chose': ' ', 'seat': ' ', 'understood': ' ', 'jobdesk': ' ', 'remove': ' ', 'motorbike': ' ', 'pretended': ' ', 'fixing': ' ', 'motorbikes': ' ', 'putting': ' ', 'dull': ' ', 'hosting': ' ', 'tilawatil': ' ', 'musabaqoh': ' ', 'seeds': ' ', 'delegation': ' ', 'caravans': ' ', 'mtqmn': ' ', 'begun': ' ', 'socialization': ' ', 'validation': ' ', 'dti': ' ', 'talent': ' ', 'bpti': ' ', 'fifteen': ' ', 'contingent': ' ', 'numbering': ' ', 'targeted': ' ', 'champions': ' ', 'recitation': ' ', 'defeating': ' ', 'deciding': ' ', 'determining': ' ', 'attachment': ' ', 'board': ' ', 'identify': ' ', 'successor': ' ', 'ulama': ' ', 'successors': ' ', 'truly': ' ', 'liquid': ' ', 'smoke': ' ', 'empower': ' ', 'meraki': ' ', 'wiyata': ' ', 'eunoia': ' ', 'tries': ' ', 'youth': ' ', 'researcher': ' ', 'tanoto': ' ', 'pyrolysis': ' ', 'pest': ' ', 'repellents': ' ', 'distillation': ' ', 'condensation': ' ', 'vapour': ' ', 'combustion': ' ', 'directly': ' ', 'indirectly': ' ', 'steam': ' ', 'compounds': ' ', 'coconut': ' ', 'husk': ' ', 'husks': ' ', 'rice': ' ', 'twigs': ' ', 'pesticide': ' ', 'price': ' ', 'cheap': ' ', 'rupiah': ' ', 'attractive': ' ', 'tested': ' ', 'crystal': ' ', 'guava': ' ', 'farming': ' ', 'monalisa': ' ', 'monitoring': ' ', 'nutrition': ' ', 'height': ' ', 'conductivity': ' ', 'automation': ' ', 'newly': ' ', 'renovated': ' ', 'toilet': ' ', 'destroyed': ' ', 'flsuhing': ' ', 'closet': ' ', 'damaged': ' ', 'floors': ' ', 'muddy': ' ', 'inhabited': ' ', 'educated': ' ', 'peak': ' ', 'scale': ' ', 'appreciates': ' ', 'consisting': ' ', 'bronze': ' ', 'poster': ' ', 'branch': ' ', 'presentation': ' ', 'revitalisation': ' ', 'entities': ' ', 'pr': ' ', 'puapt': ' ', 'ta': ' ', 'measured': ' ', 'indicators': ' ', 'iku': ' ', 'budget': ' ', 'total': ' ', 'trillion': ' ', 'schemes': ' ', 'inter': ' ', 'investing': ' ', 'productivity': ' ', 'agreed': ' ', 'invest': ' ', 'safety': ' ', 'railway': ' ', 'crossings': ' ', 'sugiono': ' ', 'map': ' ', 'awareneess': ' ', 'driving': ' ', 'dad': ' ', 'utilising': ' ', 'resembles': ' ', 'warnings': ' ', 'motorists': ' ', 'going': ' ', 'across': ' ', 'crossing': ' ', 'driver': ' ', 'connection': ' ', 'mitigating': ' ', 'accidents': ' ', 'reflecting': ' ', 'guarded': ' ', 'officers': ' ', 'crossbars': ' ', 'recognising': ' ', 'accountable': ' ', 'fair': ' ', 'jumping': ' ', 'jumped': ' ', 'unknown': ' ', 'gathered': ' ', 'med': ' ', 'fell': ' ', 'police': ' ', 'woman': ' ', 'initials': ' ', 'ls': ' ', 'resident': ' ', 'karangploso': ' ', 'lowokwaru': ' ', 'chief': ' ', 'akp': ' ', 'anton': ' ', 'collection': ' ', 'ipa': ' ', 'resigned': ' ', 'disrupted': ' ', 'illness': ' ', 'investigation': ' ', 'scene': ' ', 'crime': ' ', 'concluded': ' ', 'suspected': ' ', 'deliberately': ' ', 'committing': ' ', 'dropped': ' ', 'fikom': ' ', 'evidences': ' ', 'items': ' ', 'incision': ' ', 'scars': ' ', 'left': ' ', 'pulse': ' ', 'bleeding': ' ', 'wrapped': ' ', 'hansaplast': ' ', 'sweep': ' ', 'belonged': ' ', 'belongings': ' ', 'slippers': ' ', 'glasses': ' ', 'examined': ' ', 'evacuated': ' ', 'morgue': ' ', 'rsud': ' ', 'saiful': ' ', 'anwar': ' ', 'rssa': ' ', 'contacted': ' ', 'inform': ' ', 'incident': ' ', 'realised': ' ', 'sufficient': ' ', 'hustle': ' ', 'bustle': ' ', 'palestinians': ' ', 'israeli': ' ', 'zionists': ' ', 'un': ' ', 'commission': ' ', 'sending': ' ', 'humanitarian': ' ', 'violations': ' ', 'palestine': ' ', 'member': ' ', 'sidelines': ' ', 'declaration': ' ', 'samantha': ' ', 'krida': ' ', 'soon': ' ', 'scheduled': ' ', 'fundraising': ' ', 'raising': ' ', 'portable': ' ', 'dialysis': ' ', 'pursue': ' ', 'researched': ' ', 'electrical': ' ', 'thorium': ' ', 'net': ' ', 'zero': ' ', 'transition': ' ', 'nuclear': ' ', 'uranium': ' ', 'safer': ' ', 'radioactive': ' ', 'economical': ' ', 'feasible': ' ', 'commercially': ' ', 'density': ' ', 'supply': ' ', 'guaranteed': ' ', 'acceptable': ' ', 'feb': ' ', 'wuryan': ' ', 'andayani': ' ', 'selected': ' ', 'candidate': ' ', 'garuda': ' ', 'auditorium': ' ', 'ri': ' ', 'muslimah': ' ', 'entrepreneurs': ' ', 'association': ' ', 'ipemi': ' ', 'framework': ' ', 'mother': ' ', 'atmosphere': ' ', 'teamwork': ' ', 'clan': ' ', 'emphasises': ' ', 'mutually': ' ', 'mentor': ' ', 'tree': ' ', 'speaker': ' ', 'scoring': ' ', 'contributions': ' ', 'participant': ' ', 'accelerating': ' ', 'mentioned': ' ', 'superior': ' ', 'pronojiwo': ' ', 'lumajang': ' ', 'assisting': ' ', 'orchid': ' ', 'dadaprejo': ' ', 'junrejo': ' ', 'sub': ' ', 'candimulyo': ' ', 'jombang': ' ', 'industries': ' ', 'online': ' ', 'optimally': ' ', 'developments': ' ', 'wanting': ' ', 'master': ' ', 'influence': ' ', 'organisations': ' ', 'adopt': ' ', 'lifestyle': ' ', 'mindset': ' ', 'hard': ' ', 'ingrid': ' ', 'kansil': ' ', 'excel': ' ', 'laughed': ' ', 'pandjaitan': ' ', 'jasmine': ' ', 'facility': ' ', 'doctor': ' ', 'intention': ' ', 'queue': ' ', 'participates': ' ', 'lonely': ' ', 'phenonema': ' ', 'mean': ' ', 'unglued': ' ', 'vulnerable': ' ', 'equality': ' ', 'ultimately': ' ', 'ari': ' ', 'causes': ' ', 'commit': ' ', 'considers': ' ', 'adequate': ' ', 'preliminary': ' ', 'perception': ' ', 'predecessor': ' ', 'deny': ' ', 'systematic': ' ', 'review': ' ', 'decreases': ' ', 'clinical': ' ', 'depression': ' ', 'sleep': ' ', 'traumatic': ' ', 'stressful': ' ', 'bullying': ' ', 'trust': ' ', 'trauma': ' ', 'suicides': ' ', 'mentality': ' ', 'suggested': ' ', 'diagnose': ' ', 'educate': ' ', 'sorting': ' ', 'consume': ' ', 'news': ' ', 'supportive': ' ', 'deterred': ' ', 'typhoid': ' ', 'practitioner': ' ', 'practice': ' ', 'recovered': ' ', 'raya': ' ', 'alliance': ' ', 'peaceful': ' ', 'elections': ' ', 'provocation': ' ', 'voiced': ' ', 'limits': ' ', 'adhering': ' ', 'applicable': ' ', 'executives': ' ', 'packaged': ' ', 'platform': ' ', 'theme': ' ', 'scroll': ' ', 'present': ' ', 'delivered': ' ', 'speech': ' ', 'reinforce': ' ', 'escorting': ' ', 'peacefully': ' ', 'began': ' ', 'unisma': ' ', 'rayhan': ' ', 'khajri': ' ', 'criticising': ' ', 'officials': ' ', 'expressing': ' ', 'opinions': ' ', 'limitation': ' ', 'pak': ' ', 'joko': ' ', 'duties': ' ', 'jokowi': ' ', 'puan': ' ', 'maharani': ' ', 'megawati': ' ', 'submitted': ' ', 'l': ' ', 'er': ' ', 'jurdil': ' ', 'secret': ' ', 'honest': ' ', 'voicing': ' ', 'justice': ' ', 'truth': ' ', 'influenced': ' ', 'interests': ' ', 'overseeing': ' ', 'supervising': ' ', 'entire': ' ', 'moral': ' ', 'honesty': ' ', 'foundations': ' ', 'positively': ' ', 'presenting': ' ', 'promoting': ' ', 'political': ' ', 'dialogue': ' ', 'peace': ' ', 'headache': ' ', 'chest': ' ', 'referral': ' ', 'evening': ' ', 'fever': ' ', 'nausea': ' ', 'stomach': ' ', 'bloating': ' ', 'eh': ' '}\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# menghilangkan kata booster dan kata negasi\n",
+        "boost_in_stem = []\n",
+        "negate_in_stem = []\n",
+        "\n",
+        "\n",
+        "for term in term_dict:\n",
+        "  if term in list_kata_booster:\n",
+        "    boost_in_stem.append(term)\n",
+        "  elif term in list_kata_negasi:\n",
+        "      negate_in_stem.append(term)\n",
+        "\n",
+        "for term in boost_in_stem:\n",
+        "  del term_dict[term]\n",
+        "for term in negate_in_stem:\n",
+        "  del term_dict[term]"
+      ],
+      "metadata": {
+        "id": "iK4TZk15uJee"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(term_dict)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "HLzTzrVNyMlY",
+        "outputId": "833d4c80-7fba-49c0-e678-35ef1cb005a4"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "{'seeks': ' ', 'support': ' ', 'reduction': ' ', 'greenhouse': ' ', 'gas': ' ', 'emissions': ' ', 'government': ' ', 'target': ' ', 'reduce': ' ', 'rector': ' ', 'made': ' ', 'number': ' ', 'efforts': ' ', 'reducing': ' ', 'held': ' ', 'national': ' ', 'sustainability': ' ', 'emission': ' ', 'control': ' ', 'carbon': ' ', 'economic': ' ', 'value': ' ', 'mechanism': ' ', 'managing': ' ', 'called': ' ', 'management': ' ', 'prioritizes': ' ', 'preserving': ' ', 'nature': ' ', 'planting': ' ', 'endemic': ' ', 'plants': ' ', 'maintain': ' ', 'natural': ' ', 'ecosystems': ' ', 'production': ' ', 'purpose': ' ', 'preservation': ' ', 'buffering': ' ', 'rainwater': ' ', 'absorption': ' ', 'prevent': ' ', 'erosion': ' ', 'yes': ' ', 'area': ' ', 'carried': ' ', 'positive': ' ', 'impact': ' ', 'maintaining': ' ', 'green': ' ', 'addition': ' ', 'protected': ' ', 'hectares': ' ', 'look': ' ', 'google': ' ', 'maps': ' ', 'color': ' ', 'future': ' ', 'existing': ' ', 'trees': ' ', 'cut': ' ', 'planned': ' ', 'plant': ' ', 'capacity': ' ', 'replace': ' ', 'needs': ' ', 'thought': ' ', 'greater': ' ', 'reminds': ' ', 'careful': ' ', 'circulation': ' ', 'fraudulent': ' ', 'letters': ' ', 'payment': ' ', 'single': ' ', 'tuition': ' ', 'fees': ' ', 'ukt': ' ', 'letter': ' ', 'asks': ' ', 'pay': ' ', 'listed': ' ', 'reason': ' ', 'system': ' ', 'problem': ' ', 'application': ' ', 'illegal': ' ', 'levies': ' ', 'bills': ' ', 'bill': ' ', 'ensuring': ' ', 'commerce': ' ', 'stated': ' ', 'circulated': ' ', 'emphasized': ' ', 'procedure': ' ', 'paying': ' ', 'explained': ' ', 'website': ' ', 'transactions': ' ', 'using': ' ', 'personal': ' ', 'individual': ' ', 'hoped': ' ', 'deceived': ' ', 'worried': ' ', 'anticipate': ' ', 'implementation': ' ', 'registration': ' ', 'sbp': ' ', 'achievement': ' ', 'begin': ' ', 'prospective': ' ', 'prepare': ' ', 'snp': ' ', 'snmptn': ' ', 'quota': ' ', 'percentage': ' ', 'enter': ' ', 'estimated': ' ', 'accepted': ' ', 'route': ' ', 'social': ' ', 'study': ' ', 'programmes': ' ', 'favoured': ' ', 'least': ' ', 'favourite': ' ', 'reference': ' ', 'largest': ' ', 'admissions': ' ', 'opens': ' ', 'entry': ' ', 'channels': ' ', 'taken': ' ', 'quotas': ' ', 'opened': ' ', 'achievements': ' ', 'tests': ' ', 'channel': ' ', 'cooperate': ' ', 'party': ' ', 'person': ' ', 'promises': ' ', 'certain': ' ', 'cost': ' ', 'path': ' ', 'open': ' ', 'advantages': ' ', 'charged': ' ', 'fee': ' ', 'standard': ' ', 'no': ' ', 'base': ' ', 'money': ' ', 'like': ' ', 'consists': ' ', 'non': ' ', 'report': ' ', 'cards': ' ', 'international': ' ', 'champion': ' ', 'hafiz': ' ', 'evidenced': ' ', 'certificate': ' ', 'disability': ' ', 'special': ' ', 'disabilities': ' ', 'accompanied': ' ', 'volunteers': ' ', 'fulfilled': ' ', 'requirements': ' ', 'join': ' ', 'proven': ' ', 'graduate': ' ', 'faster': ' ', 'working': ' ', 'higher': ' ', 'starting': ' ', 'salary': ' ', 'average': ' ', 'months': ' ', 'job': ' ', 'alumni': ' ', 'short': ' ', 'fast': ' ', 'graduating': ' ', 'college': ' ', 'registered': ' ', 'increasing': ' ', 'increases': ' ', 'scattered': ' ', 'prepared': ' ', 'namely': ' ', 'iisma': ' ', 'vocational': ' ', 'teaching': ' ', 'internships': ' ', 'studies': ' ', 'certified': ' ', 'exchange': ' ', 'entrepreneurship': ' ', 'practitioners': ' ', 'attention': ' ', 'aspects': ' ', 'satisfaction': ' ', 'majority': ' ', 'satisfied': ' ', 'participated': ' ', 'agree': ' ', 'completing': ' ', 'whole': ' ', 'additional': ' ', 'competencies': ' ', 'soft': ' ', 'skills': ' ', 'thinking': ' ', 'solving': ' ', 'critical': ' ', 'creativity': ' ', 'progress': ' ', 'good': ' ', 'world': ' ', 'challenges': ' ', 'education': ' ', 'easy': ' ', 'direction': ' ', 'funding': ' ', 'facilities': ' ', 'grateful': ' ', 'appreciated': ' ', 'stronger': ' ', 'educating': ' ', 'activity': ' ', 'formulate': ' ', 'shared': ' ', 'values': ' ', 'order': ' ', 'improve': ' ', 'quality': ' ', 'recognition': ' ', 'formulating': ' ', 'strategies': ' ', 'formation': ' ', 'human': ' ', 'resource': ' ', 'character': ' ', 'gain': ' ', 'sharing': ' ', 'experiences': ' ', 'improving': ' ', 'well': ' ', 'mobilise': ' ', 'cooperation': ' ', 'achieve': ' ', 'qs': ' ', 'university': ' ', 'ranking': ' ', 'offers': ' ', 'track': ' ', 'allows': ' ', 'choose': ' ', 'test': ' ', 'part': ' ', 'register': ' ', 'hope': ' ', 'lectures': ' ', 'thesis': ' ', 'completed': ' ', 'pass': ' ', 'doctoral': ' ', 'acceleration': ' ', 'complete': ' ', 'accepting': ' ', 'minimal': ' ', 'conferring': ' ', 'honoris': ' ', 'causa': ' ', 'doctorate': ' ', 'degree': ' ', 'strategic': ' ', 'conferral': ' ', 'stages': ' ', 'regulations': ' ', 'approved': ' ', 'added': ' ', 'seen': ' ', 'contribution': ' ', 'ideas': ' ', 'field': ' ', 'business': ' ', 'transformation': ' ', 'proves': ' ', 'dedication': ' ', 'contributing': ' ', 'seeding': ' ', 'knowledge': ' ', 'forums': ' ', 'home': ' ', 'abroad': ' ', 'contributed': ' ', 'country': ' ', 'deal': ' ', 'covid': ' ', 'pandemic': ' ', 'recovery': ' ', 'encourages': ' ', 'distribution': ' ', 'earmarked': ' ', 'construction': ' ', 'scholarship': ' ', 'sarpras': ' ', 'assistance': ' ', 'educators': ' ', 'alignments': ' ', 'gender': ' ', 'young': ' ', 'evident': ' ', 'composition': ' ', 'record': ' ', 'respected': ' ', 'domestically': ' ', 'positions': ' ', 'career': ' ', 'paths': ' ', 'surpassed': ' ', 'named': ' ', 'best': ' ', 'alumnus': ' ', 'passion': ' ', 'created': ' ', 'organic': ' ', 'waste': ' ', 'seeing': ' ', 'surrounding': ' ', 'situation': ' ', 'certainly': ' ', 'disturb': ' ', 'balance': ' ', 'environment': ' ', 'makes': ' ', 'creates': ' ', 'ngalamaggot': ' ', 'points': ' ', 'proper': ' ', 'protein': ' ', 'animal': ' ', 'feed': ' ', 'rest': ' ', 'cultivation': ' ', 'fertiliser': ' ', 'product': ' ', 'development': ' ', 'maggot': ' ', 'cassava': ' ', 'computer': ' ', 'written': ' ', 'programs': ' ', 'majors': ' ', 'demand': ' ', 'following': ' ', 'list': ' ', 'medicine': ' ', 'law': ' ', 'communication': ' ', 'psychology': ' ', 'engineering': ' ', 'informatics': ' ', 'pharmacy': ' ', 'accounting': ' ', 'systems': ' ', 'bad': ' ', 'parking': ' ', 'counselling': ' ', 'services': ' ', 'affairs': ' ', 'facilitate': ' ', 'complaints': ' ', 'long': ' ', 'service': ' ', 'maybe': ' ', 'limited': ' ', 'land': ' ', 'sure': ' ', 'uni': ' ', 'pure': ' ', 'academics': ' ', 'pocket': ' ', 'receiving': ' ', 'applicants': ' ', 'recipients': ' ', 'participants': ' ', 'opportunities': ' ', 'course': ' ', 'accreditation': ' ', 'assurance': ' ', 'qualifications': ' ', 'comfortable': ' ', 'city': ' ', 'access': ' ', 'attraction': ' ', 'assessment': ' ', 'includes': ' ', 'enthusiasts': ' ', 'scientific': ' ', 'clusters': ' ', 'medical': ' ', 'nursing': ' ', 'nutritional': ' ', 'legal': ' ', 'tightest': ' ', 'pharmaceutical': ' ', 'tightness': ' ', 'dental': ' ', 'relations': ' ', 'won': ' ', 'championship': ' ', 'hasanuddin': ' ', 'techno': ' ', 'fest': ' ', 'competition': ' ', 'succeeded': ' ', 'impressing': ' ', 'jury': ' ', 'idea': ' ', 'designing': ' ', 'mental': ' ', 'health': ' ', 'applications': ' ', 'suicide': ' ', 'prevention': ' ', 'ataraxia': ' ', 'artificial': ' ', 'intelligence': ' ', 'design': ' ', 'vision': ' ', 'golden': ' ', 'help': ' ', 'detect': ' ', 'attempt': ' ', 'behaviour': ' ', 'actions': ' ', 'leaves': ' ', 'pleasant': ' ', 'impression': ' ', 'pity': ' ', 'given': ' ', 'freedom': ' ', 'choice': ' ', 'speaking': ' ', 'silenced': ' ', 'filkom': ' ', 'members': ' ', 'killjoy': ' ', 'hackfest': ' ', 'ideathon': ' ', 'hackathon': ' ', 'developer': ' ', 'cl': ' ', 'forum': ' ', 'software': ' ', 'hardware': ' ', 'stuntion': ' ', 'android': ' ', 'focuses': ' ', 'handling': ' ', 'stunting': ' ', 'realise': ' ', 'sustainable': ' ', 'goals': ' ', 'point': ' ', 'features': ' ', 'check': ' ', 'convenience': ' ', 'checking': ' ', 'users': ' ', \"'\": ' ', 'children': ' ', 'user': ' ', 'baby': ' ', 'entering': ' ', 'needed': ' ', 'answering': ' ', 'questions': ' ', 'food': ' ', 'funds': ' ', 'plic': ' ', 'consultation': ' ', 'experts': ' ', \"n't\": ' ', 'understand': ' ', 'names': ' ', 'published': ' ', 'participating': ' ', 'opportunity': ' ', 'develop': ' ', 'developing': ' ', 'technology': ' ', 'solutions': ' ', 'learn': ' ', 'society': ' ', 'required': ' ', 'create': ' ', 'innovative': ' ', 'solve': ' ', 'real': ' ', 'problems': ' ', 'environmental': ' ', 'situations': ' ', 'ability': ' ', 'want': ' ', 'title': ' ', 'delegate': ' ', 'paper': ' ', 'nanyang': ' ', 'technological': ' ', 'singapore': ' ', 'model': ' ', 'united': ' ', 'nations': ' ', 'ntu': ' ', 'mun': ' ', 'prestigious': ' ', 'conference': ' ', 'simulation': ' ', 'managed': ' ', 'advanced': ' ', 'delegates': ' ', 'felt': ' ', 'brought': ' ', 'friends': ' ', 'spirit': ' ', 'inspiration': ' ', 'evaluate': ' ', 'debating': ' ', 'diplomacy': ' ', 'next': ' ', 'increase': ' ', 'try': ' ', 'recognised': ' ', 'drive': ' ', 'large': ' ', 'challenge': ' ', 'top': ' ', 'mid': ' ', 'demonstration': ' ', 'topic': ' ', 'proud': ' ', 'interested': ' ', 'exaggerates': ' ', 'quantity': ' ', 'unimpressive': ' ', 'arrogant': ' ', 'politics': ' ', 'better': ' ', 'active': ' ', 'chasing': ' ', 'grades': ' ', 'overrated': ' ', 'fault': ' ', 'serious': ' ', 'unqualified': ' ', 'culture': ' ', 'shocked': ' ', 'problematic': ' ', 'arrogantly': ' ', 'classification': ' ', 'clear': ' ', 'parents': ' ', 'income': ' ', 'class': ' ', 'lab': ' ', 'equipment': ' ', 'inadequate': ' ', 'inside': ' ', 'match': ' ', 'appearance': ' ', 'difficult': ' ', 'admit': ' ', 'causing': ' ', 'narrow': ' ', 'leading': ' ', 'traffic': ' ', 'jams': ' ', 'excess': ' ', 'excessive': ' ', 'branding': ' ', 'media': ' ', 'advantage': ' ', 'knows': ' ', 'fortune': ' ', 'labs': ' ', 'competent': ' ', 'faculties': ' ', 'inequality': ' ', 'doubtful': ' ', 'corruption': ' ', 'collusion': ' ', 'nepotism': ' ', 'strong': ' ', 'disgusted': ' ', 'jargon': ' ', 'blue': ' ', 'full': ' ', 'asprak': ' ', 'afraid': ' ', 'hatters': ' ', 'learning': ' ', 'location': ' ', 'stingy': ' ', 'facilitating': ' ', 'bureaucracy': ' ', 'rectorate': ' ', 'library': ' ', 'ugly': ' ', 'thirsty': ' ', 'exposure': ' ', 'wkwkwk': ' ', 'flop': ' ', 'sorry': ' ', 'abandoned': ' ', 'think': ' ', 'public': ' ', 'sports': ' ', 'fields': ' ', 'lecturer': ' ', 'journey': ' ', 'ramadan': ' ', 'invites': ' ', 'return': ' ', 'contemplate': ' ', 'greatness': ' ', 'god': ' ', 'muslims': ' ', 'worship': ' ', 'permission': ' ', 'show': ' ', 'feeling': ' ', 'shame': ' ', 'wail': ' ', 'lowly': ' ', 'knocking': ' ', 'holy': ' ', 'door': ' ', 'forgiveness': ' ', 'family': ' ', 'involved': ' ', 'supplying': ' ', 'ready': ' ', 'mix': ' ', 'concrete': ' ', 'batching': ' ', 'industry': ' ', 'hell': ' ', 'closed': ' ', 'tightly': ' ', 'lust': ' ', 'rebels': ' ', 'professor': ' ', 'power': ' ', 'hadi': ' ', 'muslim': ' ', 'commitment': ' ', 'fasting': ' ', 'reminder': ' ', 'fall': ' ', 'group': ' ', 'prophet': ' ', 'muhammad': ' ', 'perform': ' ', 'sins': ' ', 'forgiven': ' ', 'lose': ' ', 'put': ' ', 'closely': ' ', 'shed': ' ', 'tears': ' ', 'soaked': ' ', 'prostrations': ' ', 'prayers': ' ', 'allah': ' ', 'equal': ' ', 'favor': ' ', 'heart': ' ', 'trembles': ' ', 'remembering': ' ', 'love': ' ', 'almighty': ' ', 'creator': ' ', 'eidulfitri': ' ', 'culmination': ' ', 'cleaning': ' ', 'blessings': ' ', 'shown': ' ', 'celebrated': ' ', 'reflection': ' ', 'miss': ' ', 'meeting': ' ', 'accordance': ' ', 'fasts': ' ', 'reasons': ' ', 'faith': ' ', 'hopes': ' ', 'reward': ' ', 'past': ' ', 'born': ' ', 'returning': ' ', 'fitrah': ' ', 'papar': ' ', 'reminded': ' ', 'let': ' ', 'feelings': ' ', 'desires': ' ', 'meet': ' ', 'disappear': ' ', 'bring': ' ', 'invaluable': ' ', 'runs': ' ', 'welcome': ' ', 'eid': ' ', 'fitr': ' ', 'holiday': ' ', 'celebration': ' ', 'community': ' ', 'prayer': ' ', 'closing': ' ', 'series': ' ', 'festivities': ' ', 'organized': ' ', 'ppa': ' ', 'religious': ' ', 'guidance': ' ', 'center': ' ', 'ahead': ' ', 'breaking': ' ', 'tausyiah': ' ', 'bazaar': ' ', 'blood': ' ', 'donor': ' ', 'tabligh': ' ', 'akbar': ' ', 'qurani': ' ', 'graduation': ' ', 'tahfizh': ' ', 'memorizing': ' ', 'qur': ' ', 'donations': ' ', 'orphans': ' ', 'presented': ' ', 'fill': ' ', 'essence': ' ', 'id': ' ', 'attended': ' ', 'leaders': ' ', 'lecturers': ' ', 'staff': ' ', 'studying': ' ', 'almet': ' ', 'complain': ' ', 'hannover': ' ', 'messe': ' ', 'startup': ' ', 'axotic': ' ', 'farm': ' ', 'presents': ' ', 'fish': ' ', 'trading': ' ', 'fisheries': ' ', 'market': ' ', 'expansion': ' ', 'europe': ' ', 'downstream': ' ', 'research': ' ', 'fishery': ' ', 'products': ' ', 'ultra': ' ', 'recirculated': ' ', 'chiller': ' ', 'commodity': ' ', 'focus': ' ', 'axolotl': ' ', 'ambystoma': ' ', 'mexicanum': ' ', 'developed': ' ', 'mexico': ' ', 'lives': ' ', 'tropical': ' ', 'climate': ' ', 'adaptive': ' ', 'bigger': ' ', 'salmon': ' ', 'previously': ' ', 'passed': ' ', 'competitions': ' ', 'received': ' ', 'silver': ' ', 'medal': ' ', 'pimnas': ' ', 'xxxiv': ' ', 'awards': ' ', 'utu': ' ', 'planning': ' ', 'annual': ' ', 'industrial': ' ', 'exhibition': ' ', 'deutsche': ' ', 'ag': ' ', 'dmag': ' ', 'cooperating': ' ', 'partner': ' ', 'countries': ' ', 'trusted': ' ', 'ministries': ' ', '/': ' ', 'institutions': ' ', 'pavilion': ' ', 'square': ' ', 'meters': ' ', 'exam': ' ', 'reached': ' ', 'increased': ' ', 'compared': ' ', 'holding': ' ', 'wave': ' ', 'computers': ' ', 'rooms': ' ', 'run': ' ', 'netted': ' ', 'talents': ' ', 'capable': ' ', 'reviewing': ' ', 'advertisement': ' ', 'reviewed': ' ', 'locations': ' ', 'agricultural': ' ', 'economics': ' ', 'visited': ' ', 'representatives': ' ', 'committee': ' ', 'snpmb': ' ', 'tri': ' ', 'budi': ' ', 'santoso': ' ', 'confessed': ' ', 'assessed': ' ', 'entrance': ' ', 'asked': ' ', 'transit': ' ', 'room': ' ', 'neat': ' ', 'soothing': ' ', 'surabaya': ' ', 'electronics': ' ', 'polytechnic': ' ', 'chancellor': ' ', 'imam': ' ', 'applies': ' ', 'protocols': ' ', 'provisions': ' ', 'weeks': ' ', 'cases': ' ', 'ensure': ' ', 'healthy': ' ', 'thermal': ' ', 'guns': ' ', 'temperature': ' ', 'detection': ' ', 'monitors': ' ', 'read': ' ', 'ren': ' ', 'win': ' ', 'chemical': ' ', 'reaction': ' ', 'car': ' ', 'petition': ' ', 'villages': ' ', 'village': ' ', 'atomic': ' ', 'cher': ' ', 'achieved': ' ', 'nd': ' ', 'winner': ' ', 'passing': ' ', 'selections': ' ', 'prototype': ' ', 'concepts': ' ', 'teams': ' ', 'respective': ' ', 'prototypes': ' ', 'judges': ' ', 'undergraduate': ' ', 'institute': ' ', 'aims': ' ', 'demonstrate': ' ', 'reactions': ' ', 'race': ' ', 'stage': ' ', 'calculate': ' ', 'stop': ' ', 'advance': ' ', 'trials': ' ', 'atom': ' ', 'nawasena': ' ', 'carries': ' ', 'concept': ' ', 'pressurized': ' ', 'filtered': ' ', 'air': ' ', 'regulator': ' ', 'filter': ' ', 'moves': ' ', 'piston': ' ', 'assisted': ' ', 'mechanical': ' ', 'roller': ' ', 'valve': ' ', 'moving': ' ', 'produce': ' ', 'derived': ' ', 'decomposition': ' ', 'comes': ' ', 'hydrogen': ' ', 'peroxide': ' ', 'catalyst': ' ', 'accelerate': ' ', 'echoed': ' ', 'act': ' ', 'podium': ' ', 'lap': ' ', 'chem': ' ', 'achieving': ' ', 'carrying': ' ', 'cars': ' ', 'racing': ' ', 'chemicals': ' ', 'excelled': ' ', 'finalist': ' ', 'superiority': ' ', 'move': ' ', 'generated': ' ', 'collaborating': ' ', 'japan': ' ', 'nagoya': ' ', 'initiated': ' ', 'establishment': ' ', 'robotics': ' ', 'data': ' ', 'material': ' ', 'collaborations': ' ', 'innovation': ' ', 'consider': ' ', 'important': ' ', 'partners': ' ', 'collaboration': ' ', 'grow': ' ', 'focused': ' ', 'herbal': ' ', 'novanto': ' ', 'yudistira': ' ', 'applied': ' ', 'molecular': ' ', 'molecules': ' ', 'sophistication': ' ', 'explore': ' ', 'beneficial': ' ', 'sector': ' ', 'waseda': ' ', 'making': ' ', 'humanoid': ' ', 'robots': ' ', 'king': ' ', 'ijaya': ' ', 'established': ' ', 'choosing': ' ', 'ranked': ' ', 'star': ' ', 'version': ' ', 'directed': ' ', 'reputable': ' ', 'journals': ' ', 'encourage': ' ', 'cooperated': ' ', 'chukyo': ' ', 'keio': ' ', 'follow': ' ', 'reads': ' ', 'spotlight': ' ', 'recent': ' ', 'care': ' ', 'creation': ' ', 'initially': ' ', 'sparked': ' ', 'claimed': ' ', 'difficulty': ' ', 'treatment': ' ', 'tried': ' ', 'resolved': ' ', 'initial': ' ', 'physically': ' ', 'mentally': ' ', 'ranging': ' ', 'disorder': ' ', 'articles': ' ', 'videos': ' ', 'sufferers': ' ', 'disorders': ' ', 'feature': ' ', 'emergency': ' ', 'severe': ' ', 'communicating': ' ', 'psychiatrist': ' ', 'psychologist': ' ', 'chat': ' ', 'video': ' ', 'phone': ' ', 'give': ' ', 'psychologists': ' ', 'psychiatrists': ' ', 'facial': ' ', 'expressions': ' ', 'designed': ' ', 'patent': ' ', 'results': ' ', 'satisfying': ' ', 'gold': ' ', 'investor': ' ', 'wyie': ' ', 'category': ' ', 'asian': ' ', 'invention': ' ', 'award': ' ', 'executive': ' ', 'dismissed': ' ', 'accused': ' ', 'muzzling': ' ', 'democratization': ' ', 'president': ' ', 'dismissal': ' ', 'summoning': ' ', 'caused': ' ', 'dismiss': ' ', 'trigger': ' ', 'protested': ' ', 'awarding': ' ', 'titles': ' ', 'representative': ' ', 'council': ' ', 'spoke': ' ', 'freezing': ' ', 'wr': ' ', 'action': ' ', 'considered': ' ', 'sovereignty': ' ', 'prohibition': ' ', 'inhibiting': ' ', 'condemned': ' ', 'threatened': ' ', 'removal': ' ', 'reject': ' ', 'attitude': ' ', 'freezes': ' ', 'inhibits': ' ', 'administrative': ' ', 'financial': ' ', 'rights': ' ', 'oriented': ' ', 'facilitated': ' ', 'orientation': ' ', 'stopping': ' ', 'muzzled': ' ', 'proof': ' ', 'currently': ' ', 'classified': ' ', 'ukm': ' ', 'units': ' ', 'legislative': ' ', 'supervisory': ' ', 'functions': ' ', 'legitimacy': ' ', 'sectors': ' ', 'completely': ' ', 'element': ' ', 'pkkmb': ' ', 'irregularities': ' ', 'transparency': ' ', 'fraud': ' ', 'case': ' ', 'deputy': ' ', 'chairman': ' ', 'generation': ' ', 'supervision': ' ', 'oversees': ' ', 'role': ' ', 'authority': ' ', 'formal': ' ', 'rejects': ' ', 'forms': ' ', 'suppression': ' ', 'democracy': ' ', 'asking': ' ', 'restore': ' ', 'bringing': ' ', 'congress': ' ', 'denied': ' ', 'alleged': ' ', 'freeze': ' ', 'exist': ' ', 'discussed': ' ', 'motivated': ' ', 'demonstrations': ' ', 'criticism': ' ', 'pancasila': ' ', 'conducted': ' ', 'current': ' ', 'revealed': ' ', 'offer': ' ', 'reconcile': ' ', 'intermediary': ' ', 'rejected': ' ', 'cowardice': ' ', 'reply': ' ', 'invited': ' ', 'engage': ' ', 'debate': ' ', 'responded': ' ', 'request': ' ', 'office': ' ', 'waiting': ' ', 'apology': ' ', 'statement': ' ', 'publicly': ' ', 'apologize': ' ', 'sign': ' ', 'integrity': ' ', 'pact': ' ', 'inaugurated': ' ', 'urban': ' ', 'rachmat': ' ', 'kriyantono': ' ', 'oration': ' ', 'excellence': ' ', 'plus': ' ', 'useful': ' ', 'practices': ' ', 'responsible': ' ', 'supporting': ' ', 'digital': ' ', 'era': ' ', 'influential': ' ', 'managerial': ' ', 'convey': ' ', 'aspirations': ' ', 'lower': ' ', 'levels': ' ', 'conveyed': ' ', 'raised': ' ', 'principles': ' ', 'accommodation': ' ', 'advocacy': ' ', 'recommended': ' ', 'balanced': ' ', 'perceptions': ' ', 'roles': ' ', 'synchronization': ' ', 'cross': ' ', 'degradation': ' ', 'profession': ' ', 'strengthen': ' ', 'adopting': ' ', 'dissertation': ' ', 'entitled': ' ', 'wise': ' ', 'plenary': ' ', 'technocratic': ' ', 'balances': ' ', 'spiritual': ' ', 'discuss': ' ', 'pkp': ' ', 'balancing': ' ', 'integrates': ' ', 'socio': ' ', 'dimensions': ' ', 'sees': ' ', 'welfare': ' ', 'built': ' ', 'phases': ' ', 'poverty': ' ', 'alleviation': ' ', 'resilience': ' ', 'livability': ' ', 'happiness': ' ', 'surjono': ' ', 'strength': ' ', 'responsive': ' ', 'essential': ' ', 'godly': ' ', 'nation': ' ', 'broad': ' ', 'weakness': ' ', 'measure': ' ', 'alone': ' ', 'set': ' ', 'standards': ' ', 'pluralistic': ' ', 'complex': ' ', 'organism': ' ', 'humans': ' ', 'dwellers': ' ', 'capital': ' ', 'physical': ' ', 'perspective': ' ', 'follows': ' ', 'cycle': ' ', 'strengthening': ' ', 'psychological': ' ', 'admitted': ' ', 'intimidation': ' ', 'fighting': ' ', 'silencing': ' ', 'lkm': ' ', 'unit': ' ', 'beginning': ' ', 'resistance': ' ', 'threats': ' ', 'discourage': ' ', 'fyi': ' ', 'infrastructure': ' ', 'uneven': ' ', 'sycophants': ' ', 'bureaucrats': ' ', 'talked': ' ', 'son': ' ', 'ancurur': ' ', 'election': ' ', 'pp': ' ', 'lazy': ' ', 'complaining': ' ', 'absent': ' ', 'toxic': ' ', 'sexual': ' ', 'neglected': ' ', 'juve': ' ', 'henson': ' ', 'underwent': ' ', 'bidikmisi': ' ', 'funded': ' ', 'majoring': ' ', 'japanese': ' ', 'literature': ' ', 'cumlaude': ' ', 'humanities': ' ', 'occupy': ' ', 'followed': ' ', 'coordinating': ' ', 'ministry': ' ', 'oversee': ' ', 'revitalization': ' ', 'training': ' ', 'presidential': ' ', 'regulation': ' ', 'launched': ' ', 'competence': ' ', 'coordination': ' ', 'auspices': ' ', 'kemendikbudristek': ' ', 'labor': ' ', 'republic': ' ', 'kemnaker': ' ', 'unity': ' ', 'certification': ' ', 'bnsp': ' ', 'potential': ' ', 'lacking': ' ', 'lack': ' ', 'links': ' ', 'backwards': ' ', 'ppks': ' ', 'finished': ' ', 'agency': ' ', 'silent': ' ', 'investigate': ' ', 'safe': ' ', 'offenders': ' ', 'investigated': ' ', 'victims': ' ', 'solution': ' ', 'promising': ' ', 'taking': ' ', 'concerned': ' ', 'perpetrator': ' ', 'fraudster': ' ', 'wake': ' ', 'ultksp': ' ', 'wanted': ' ', 'violence': ' ', 'useless': ' ', 'posters': ' ', 'pasted': ' ', 'trash': ' ', 'dare': ' ', 'speak': ' ', 'handled': ' ', 'rotten': ' ', 'matter': ' ', 'duty': ' ', 'protecting': ' ', 'predators': ' ', 'criminal': ' ', 'acts': ' ', 'girl': ' ', 'wants': ' ', 'ouch': ' ', 'suck': ' ', 'aware': ' ', 'visible': ' ', 'charge': ' ', 'perverts': ' ', 'reported': ' ', 'bem': ' ', 'apathetic': ' ', 'continuation': ' ', 'victim': ' ', 'child': ' ', 'busy': ' ', 'incompetent': ' ', 'scope': ' ', 'resources': ' ', 'utilization': ' ', 'banking': ' ', 'director': ' ', 'bank': ' ', 'muamalat': ' ', 'establish': ' ', 'literacy': ' ', 'inclusion': ' ', 'intermediaries': ' ', 'committed': ' ', 'index': ' ', 'islamic': ' ', 'finance': ' ', 'accommodate': ' ', 'utilized': ' ', 'customer': ' ', 'customers': ' ', 'cash': ' ', 'cms': ' ', 'madina': ' ', 'giro': ' ', 'savings': ' ', 'deposits': ' ', 'located': ' ', 'utilize': ' ', 'virtual': ' ', 'biller': ' ', 'payments': ' ', 'employee': ' ', 'benefit': ' ', 'forestry': ' ', 'signed': ' ', 'agreements': ' ', 'document': ' ', 'derivative': ' ', 'memorandum': ' ', 'understanding': ' ', 'dharma': ' ', 'directorate': ' ', 'conservation': ' ', 'extension': ' ', 'partnership': ' ', 'importance': ' ', 'creating': ' ', 'merely': ' ', 'monotonous': ' ', 'procedures': ' ', 'processes': ' ', 'routines': ' ', 'central': ' ', 'regional': ' ', 'agencies': ' ', 'parties': ' ', 'benefits': ' ', 'impacts': ' ', 'performance': ' ', 'outputs': ' ', 'produced': ' ', 'governance': ' ', 'expected': ' ', 'jointly': ' ', 'representing': ' ', 'asia': ' ', 'games': ' ', 'riyadh': ' ', 'saudi': ' ', 'arabia': ' ', 'compete': ' ', 'savate': ' ', 'sport': ' ', 'upcoming': ' ', 'biggest': ' ', 'highest': ' ', 'suppose': ' ', 'history': ' ', 'bat': ' ', 'brings': ' ', 'athletes': ' ', 'branches': ' ', 'martial': ' ', 'arts': ' ', 'taekwondo': ' ', 'karate': ' ', 'qualify': ' ', 'th': ' ', 'represent': ' ', 'kg': ' ', 'senior': ' ', 'brilliant': ' ', 'athlete': ' ', 'marks': ' ', 'success': ' ', 'rafie': ' ', 'kempo': ' ', 'basketball': ' ', 'championships': ' ', 'shell': ' ', 'eco': ' ', 'marathon': ' ', 'apatte': ' ', 'energy': ' ', 'efficient': ' ', 'explains': ' ', 'obesity': ' ', 'factors': ' ', 'basilmu': ' ', 'professors': ' ', 'came': ' ', 'bioenergy': ' ', 'semi': ' ', 'continuous': ' ', 'supercritical': ' ', 'reactor': ' ', 'biodiesel': ' ', 'gasoline': ' ', 'diesel': ' ', 'oil': ' ', 'fossil': ' ', 'materials': ' ', 'fuel': ' ', 'specifications': ' ', 'machines': ' ', 'availability': ' ', 'contribute': ' ', 'exhaust': ' ', 'gases': ' ', 'guys': ' ', 'boys': ' ', 'fuels': ' ', 'replacing': ' ', 'renewable': ' ', 'necessity': ' ', 'realized': ' ', 'bioethanol': ' ', 'conversion': ' ', 'biomass': ' ', 'explanation': ' ', 'enhancement': ' ', 'alternative': ' ', 'resolving': ' ', 'china': ' ', 'sea': ' ', 'dispute': ' ', 'leniency': ' ', 'regulatory': ' ', 'combat': ' ', 'cartels': ' ', 'shadow': ' ', 'realism': ' ', 'approach': ' ', 'constitutional': ' ', 'blossomed': ' ', 'husband': ' ', 'wife': ' ', 'ump': ' ', 'swear': ' ', 'ft': ' ', 'cute': ' ', 'kingdom': ' ', 'salty': ' ', 'afford': ' ', 'private': ' ', 'campuses': ' ', 'okay': ' ', 'forced': ' ', 'le': ' ', 'integrated': ' ', 'agriculture': ' ', 'banyuwangi': ' ', 'nice': ' ', 'clinic': ' ', 'free': ' ', 'centre': ' ', 'gym': ' ', 'independence': ' ', 'speed': ' ', 'please': ' ', 'accredit': ' ', 'father': ' ', 'proposal': ' ', 'imagine': ' ', 'friend': ' ', 'ipi': ' ', 'subject': ' ', 'institutional': ' ', 'netizens': ' ', 'compare': ' ', 'unhas': ' ', 'tourism': ' ', 'bgtt': ' ', 'responding': ' ', 'tweets': ' ', 'stating': ' ', 'objections': ' ', 'apply': ' ', 'waivers': ' ', 'nominal': ' ', 'declared': ' ', 'coloured': ' ', 'hilarious': ' ', 'prof': ' ', 'casually': ' ', 'selfie': ' ', 'photo': ' ', 'styles': ' ', 'graduates': ' ', 'certificates': ' ', 'interesting': ' ', 'moment': ' ', 'hand': ' ', 'gestures': ' ', 'code': ' ', 'style': ' ', 'fortunately': ' ', 'continuing': ' ', 'spread': ' ', 'smiles': ' ', 'wishes': ' ', 'signals': ' ', 'showing': ' ', 'eccentric': ' ', 'uploaded': ' ', 'talk': ' ', 'praised': ' ', 'willing': ' ', 'serve': ' ', 'happy': ' ', 'moments': ' ', 'took': ' ', 'procession': ' ', 'dentistry': ' ', 'inauguration': ' ', 'caries': ' ', 'diseases': ' ', 'global': ' ', 'burden': ' ', 'disease': ' ', 'adversely': ' ', 'affects': ' ', 'oral': ' ', 'implications': ' ', 'chronic': ' ', 'growth': ' ', 'salivary': ' ', 'secretion': ' ', 'risk': ' ', 'delay': ' ', 'eruption': ' ', 'permanent': ' ', 'teeth': ' ', 'dentin': ' ', 'liners': ' ', 'protect': ' ', 'pulp': ' ', 'bacterial': ' ', 'infection': ' ', 'pretend': ' ', 'task': ' ', 'force': ' ', 'response': ' ', 'slow': ' ', 'sciences': ' ', 'appreciate': ' ', 'birth': ' ', 'ongoing': ' ', 'basis': ' ', 'confirmed': ' ', 'promised': ' ', 'investment': ' ', 'bahlil': ' ', 'hockey': ' ', 'lifetime': ' ', 'scholarships': ' ', '&': ' ', 'employment': ' ', 'contracts': ' ', 'question': ' ', 'sessions': ' ', 'fairuz': ' ', 'sarah': ' ', 'kamila': ' ', 'mipa': ' ', 'youngest': ' ', 'graduated': ' ', 'age': ' ', 'motivation': ' ', 'maximum': ' ', 'credits': ' ', 'laboratory': ' ', 'fourth': ' ', 'forgetting': ' ', 'keep': ' ', 'defending': ' ', 'anticancer': ' ', 'effects': ' ', 'ethanol': ' ', 'extracts': ' ', 'sembung': ' ', 'legi': ' ', 'blumea': ' ', 'balsamifera': ' ', 'breast': ' ', 'cancer': ' ', 'cells': ' ', 'earlier': ' ', 'vitro': ' ', 'exploration': ' ', 'treating': ' ', 'cell': ' ', 'cultures': ' ', 'organizers': ' ', 'entrepreneurial': ' ', 'academy': ' ', 'groups': ' ', 'build': ' ', 'obligations': ' ', 'innovations': ' ', 'businesses': ' ', 'umkm': ' ', 'actors': ' ', 'competing': ' ', 'dropping': ' ', 'micro': ' ', 'collaborate': ' ', 'dream': ' ', 'childhood': ' ', 'pursued': ' ', 'thanks': ' ', 'mobility': ' ', 'pessimistic': ' ', 'trenggalek': ' ', 'jihan': ' ', 'dreamed': ' ', 'school': ' ', 'discouraged': ' ', 'horizons': ' ', 'identity': ' ', 'citizen': ' ', 'helpful': ' ', 'prioritise': ' ', 'classes': ' ', 'night': ' ', 'finishing': ' ', 'lecture': ' ', 'edurank': ' ', 'america': ' ', 'conducts': ' ', 'assessments': ' ', 'reputation': ' ', 'routinely': ' ', 'releases': ' ', 'continent': ' ', 'eighth': ' ', 'requirement': ' ', 'discussion': ' ', 'involve': ' ', 'permendikbudristek': ' ', 'meets': ' ', 'outcomes': ' ', 'implemented': ' ', 'implement': ' ', 'project': ' ', 'curriculum': ' ', 'relevant': ' ', 'final': ' ', 'assignment': ' ', 'mandatory': ' ', 'policies': ' ', 'stipulated': ' ', 'policy': ' ', 'regulated': ' ', 'wider': ' ', 'determine': ' ', 'suitable': ' ', 'options': ' ', 'terms': ' ', 'fulfilling': ' ', 'mentioning': ' ', 'handed': ' ', 'assignments': ' ', 'introduce': ' ', 'art': ' ', 'language': ' ', 'foreign': ' ', 'egypt': ' ', 'korea': ' ', 'england': ' ', 'globalisation': ' ', 'dealing': ' ', 'advances': ' ', 'intercultural': ' ', 'interactions': ' ', 'claims': ' ', 'flattered': ' ', 'cultural': ' ', 'wealth': ' ', 'hamamah': ' ', 'view': ' ', 'interaction': ' ', 'bridges': ' ', 'eyes': ' ', 'pretty': ' ', 'game': ' ', 'corner': ' ', 'spend': ' ', 'hoping': ' ', 'hours': ' ', 'recreation': ' ', 'hobbies': ' ', 'socialise': ' ', 'developers': ' ', 'supports': ' ', 'mobile': ' ', 'multimedia': ' ', 'mgm': ' ', 'relaxing': ' ', 'hone': ' ', 'playing': ' ', 'togetherness': ' ', 'younger': ' ', 'gaming': ' ', 'rakyat': ' ', 'bri': ' ', 'floor': ' ', 'counter': ' ', 'equipped': ' ', 'play': ' ', 'station': ' ', 'xbox': ' ', 'pc': ' ', 'asus': ' ', 'rog': ' ', 'pamper': ' ', 'equally': ' ', 'verbally': ' ', 'harassed': ' ', 'witnesses': ' ', 'evidence': ' ', 'playstation': ' ', 'today': ' ', 'sefakultas': ' ', 'recreational': ' ', 'purposes': ' ', 'ideology': ' ', 'bpip': ' ', 'inspiring': ' ', 'works': ' ', 'facing': ' ', 'abolition': ' ', 'sidi': ' ', 'lpg': ' ', 'resulted': ' ', 'prices': ' ', 'fuelled': ' ', 'stoves': ' ', 'charcoal': ' ', 'raw': ' ', 'pieces': ' ', 'wood': ' ', 'palm': ' ', 'kernel': ' ', 'shells': ' ', 'hazelnut': ' ', 'processed': ' ', 'briquettes': ' ', 'pellets': ' ', 'removed': ' ', 'stove': ' ', 'benefited': ' ', 'nurhuda': ' ', 'drin': ' ', 'fusion': ' ', 'drn': ' ', 'commemoration': ' ', 'icons': ' ', 'individuals': ' ', 'communities': ' ', 'da': ' ', 'lift': ' ', 'merger': ' ', 'wifi': ' ', 'garden': ' ', 'plugs': ' ', 'peeled': ' ', 'stun': ' ', 'renovate': ' ', 'enlarged': ' ', 'expanded': ' ', 'pilot': ' ', 'table': ' ', 'bag': ' ', 'fan': ' ', 'hot': ' ', 'bit': ' ', 'crowded': ' ', 'noisy': ' ', 'modernise': ' ', 'possible': ' ', 'downstairs': ' ', 'borrowed': ' ', 'books': ' ', 'returned': ' ', 'chairs': ' ', 'lights': ' ', 'paint': ' ', 'reversed': ' ', 'weekends': ' ', 'replaced': ' ', 'scary': ' ', 'laptop': ' ', 'desk': ' ', 'chair': ' ', 'loose': ' ', 'dust': ' ', 'tables': ' ', 'poor': ' ', 'buy': ' ', 'coffee': ' ', 'cafe': ' ', 'boarding': ' ', 'house': ' ', 'lie': ' ', 'longer': ' ', 'afternoon': ' ', 'leaving': ' ', 'conditioning': ' ', 'spacious': ' ', 'smell': ' ', 'musty': ' ', 'wall': ' ', 'moulded': ' ', 'covered': ' ', 'wallpaper': ' ', 'museum': ' ', 'english': ' ', 'updated': ' ', 'site': ' ', 'change': ' ', 'gazebo': ' ', 'dead': ' ', 'heard': ' ', 'fk': ' ', 'textbooks': ' ', 'older': ' ', 'interior': ' ', 'schedule': ' ', 'curfew': ' ', 'half': ' ', 'opening': ' ', 'maleman': ' ', 'dizzy': ' ', 'find': ' ', 'confused': ' ', 'search': ' ', 'repair': ' ', 'bathroom': ' ', 'messy': ' ', 'rules': ' ', 'book': ' ', 'extended': ' ', 'operating': ' ', 'upstairs': ' ', 'complicated': ' ', 'luggage': ' ', 'switched': ' ', 'transparent': ' ', 'surprising': ' ', 'novelles': ' ', 'cooled': ' ', 'midwifery': ' ', 'latest': ' ', 'develops': ' ', 'profile': ' ', 'surya': ' ', 'buana': ' ', 'kota': ' ', 'elementary': ' ', 'suddenly': ' ', 'die': ' ', 'environmentally': ' ', 'household': ' ', 'corn': ' ', 'cobs': ' ', 'straws': ' ', 'pkm': ' ', 'ristekdikti': ' ', 'edible': ' ', 'plastic': ' ', 'straw': ' ', 'teach': ' ', 'female': ' ', 'rofiaty': ' ', 'requires': ' ', 'adapt': ' ', 'changes': ' ', 'internally': ' ', 'externally': ' ', 'update': ' ', 'breakthroughs': ' ', 'survive': ' ', 'competitiveness': ' ', 'flexible': ' ', 'key': ' ', 'word': ' ', 'optimum': ' ', 'remain': ' ', 'fishing': ' ', 'fleet': ' ', 'controlled': ' ', 'effectively': ' ', 'collected': ' ', 'population': ' ', 'coastal': ' ', 'areas': ' ', 'depend': ' ', 'stakeholders': ' ', 'manage': ' ', 'marine': ' ', 'components': ' ', 'ecology': ' ', 'biophysical': ' ', 'fishers': ' ', 'processors': ' ', 'earthquake': ' ', 'lamp': ' ', 'laga': ' ', 'automatic': ' ', 'warning': ' ', 'prone': ' ', 'winners': ' ', 'kemendibudristek': ' ', 'alarm': ' ', 'normally': ' ', 'sleeping': ' ', 'warm': ' ', 'white': ' ', 'trapezoidal': ' ', 'adds': ' ', 'aesthetics': ' ', 'uses': ' ', 'rechargeable': ' ', 'battery': ' ', 'mah': ' ', 'lit': ' ', 'recharge': ' ', 'zone': ' ', 'tool': ' ', 'prism': ' ', 'shaped': ' ', 'add': ' ', 'li': ' ', 'ion': ' ', 'batteries': ' ', 'recharged': ' ', 'save': ' ', 'costs': ' ', 'light': ' ', 'included': ' ', 'rep': ' ', 'lik': ' ', 'marketing': ' ', 'selling': ' ', 'fight': ' ', 'upgrade': ' ', 'valid': ' ', 'type': ' ', 'diabetes': ' ', 'mellitus': ' ', 'glucosipp': ' ', 'invasive': ' ', 'glucometer': ' ', 'insulin': ' ', 'pump': ' ', 'glucagon': ' ', 'copyright': ' ', 'intellectual': ' ', 'property': ' ', 'hki': ' ', 'issued': ' ', 'djki': ' ', 'sugar': ' ', 'tools': ' ', 'require': ' ', 'lancet': ' ', 'device': ' ', 'strips': ' ', 'bracelet': ' ', 'ppg': ' ', 'sensors': ' ', 'utilizing': ' ', 'spectroscopic': ' ', 'methods': ' ', 'fairly': ' ', 'usage': ' ', 'wearing': ' ', 'logging': ' ', 'monitor': ' ', 'anytime': ' ', 'hormone': ' ', 'pumps': ' ', 'overcome': ' ', 'exists': ' ', 'po': ' ', 'presence': ' ', 'diabetics': ' ', 'tangible': ' ', 'overcoming': ' ', 'postgraduate': ' ', 'ceremony': ' ', 'yoana': ' ', 'ervina': ' ', 'febriyanti': ' ', 'psdku': ' ', 'kediri': ' ', 'satisfactory': ' ', 'cumulative': ' ', 'peers': ' ', 'write': ' ', 'fluently': ' ', 'childish': ' ', 'classmates': ' ', 'consequence': ' ', 'faced': ' ', 'missed': ' ', 'demands': ' ', 'lessons': ' ', 'mature': ' ', 'communicate': ' ', 'frida': ' ', 'officially': ' ', 'laude': ' ', 'predicate': ' ', 'familiar': ' ', 'call': ' ', 'turns': ' ', 'figure': ' ', 'surprises': ' ', 'duta': ' ', 'wisata': ' ', 'ponorogo': ' ', 'district': ' ', 'kakang': ' ', 'batik': ' ', 'ambassador': ' ', 'apbj': ' ', 'dekranasda': ' ', 'province': ' ', 'surprise': ' ', 'merce': ' ', 'companies': ' ', 'operations': ' ', 'analyst': ' ', 'obtained': ' ', 'perfect': ' ', 'extraordinary': ' ', 'significant': ' ', 'professional': ' ', 'abilities': ' ', 'qualified': ' ', 'press': ' ', 'perpusnas': ' ', 'publisher': ' ', 'smart': ' ', 'economy': ' ', 'calcium': ' ', 'oxalate': ' ', 'porang': ' ', 'processing': ' ', 'amorpho': ' ', 'coagulation': ' ', 'tech': ' ', 'rise': ' ', 'surge': ' ', 'contains': ' ', 'dangerous': ' ', 'allowed': ' ', 'discharged': ' ', 'accumulation': ' ', 'sedimentation': ' ', 'soil': ' ', 'pollution': ' ', 'shobri': ' ', 'electrocoagulation': ' ', 'extraction': ' ', 'method': ' ', 'purification': ' ', 'filtration': ' ', 'chamber': ' ', 'internet': ' ', 'sensor': ' ', 'realtime': ' ', 'creative': ' ', 'machine': ' ', 'convert': ' ', 'fischer': ' ', 'tropsch': ' ', 'supported': ' ', 'step': ' ', 'sources': ' ', 'integration': ' ', 'optimize': ' ', 'algorithms': ' ', 'automatically': ' ', 'adjust': ' ', 'probarameters': ' ', 'efficiency': ' ', 'yield': ' ', 'conventional': ' ', 'pave': ' ', 'similar': ' ', 'technologies': ' ', 'dependence': ' ', 'chinese': ' ', 'betel': ' ', 'leaf': ' ', 'extract': ' ', 'peperomia': ' ', 'pellucida': ' ', 'domestic': ' ', 'contain': ' ', 'antioxidants': ' ', 'anti': ' ', 'aging': ' ', 'agent': ' ', 'cosmeceuticals': ' ', 'cosmeceutical': ' ', 'moisturizer': ' ', 'formulations': ' ', 'simplisia': ' ', 'nanostructured': ' ', 'lipid': ' ', 'carrier': ' ', 'nlc': ' ', 'ingredients': ' ', 'antioxidant': ' ', 'premature': ' ', 'preparation': ' ', 'therapeutic': ' ', 'skin': ' ', 'preparations': ' ', 'formulation': ' ', 'marketed': ' ', 'department': ' ', 'competed': ' ', 'belt': ' ', 'infrared': ' ', 'serves': ' ', 'relieve': ' ', 'menstrual': ' ', 'pain': ' ', 'women': ' ', 'adding': ' ', 'fashionable': ' ', 'menstruation': ' ', 'prioritizing': ' ', 'function': ' ', 'relieving': ' ', 'comfortably': ' ', 'worn': ' ', 'accessory': ' ', 'utilizes': ' ', 'heat': ' ', 'abdominal': ' ', 'connected': ' ', 'iot': ' ', 'refers': ' ', 'network': ' ', 'objects': ' ', 'pm': ' ', 'dropout': ' ', 'rate': ' ', 'cbe': ' ', 'packs': ' ', 'consciousness': ' ', 'interactive': ' ', 'sites': ' ', 'smartcbe': ' ', 'meditation': ' ', 'regularly': ' ', 'awareness': ' ', 'tobacco': ' ', 'ultrasound': ' ', 'reveal': ' ', 'assuming': ' ', 'animals': ' ', 'sounds': ' ', 'sick': ' ', 'sound': ' ', 'recording': ' ', 'showed': ' ', 'stress': ' ', 'biotic': ' ', 'phytophthora': ' ', 'nicotianae': ' ', 'structural': ' ', 'transport': ' ', 'great': ' ', 'recognize': ' ', 'damage': ' ', 'mangrove': ' ', 'prevented': ' ', 'attacked': ' ', 'malignant': ' ', 'destruction': ' ', 'vessels': ' ', 'stem': ' ', 'roots': ' ', 'stalks': ' ', 'block': ' ', 'flow': ' ', 'water': ' ', 'nutrients': ' ', 'broadly': ' ', 'inhibit': ' ', 'photosynthesis': ' ', 'dies': ' ', 'worse': ' ', 'farmers': ' ', 'crop': ' ', 'failure': ' ', 'neuvilette': ' ', 'dki': ' ', 'weather': ' ', 'modification': ' ', 'tmc': ' ', 'modify': ' ', 'specific': ' ', 'desired': ' ', 'sunlight': ' ', 'unpollution': ' ', 'clean': ' ', 'pollutants': ' ', 'producing': ' ', 'solar': ' ', 'panels': ' ', 'crisis': ' ', 'cleans': ' ', 'produces': ' ', 'intelligent': ' ', 'devices': ' ', 'regulate': ' ', 'guided': ' ', 'mochammad': ' ', 'roviq': ' ', 'sp': ' ', 'mp': ' ', 'security': ' ', 'mathematics': ' ', 'oyster': ' ', 'electric': ' ', 'vehicle': ' ', 'oxide': ' ', 'content': ' ', 'vehicles': ' ', 'exact': ' ', 'abundant': ' ', 'evaluation': ' ', 'effective': ' ', 'optimized': ' ', 'discovered': ' ', 'finding': ' ', 'crossta': ' ', 'baterry': ' ', 'surprised': ' ', 'male': ' ', 'assessing': ' ', 'mixed': ' ', 'physique': ' ', 'beautiful': ' ', 'choir': ' ', 'ftp': ' ', 'busan': ' ', 'choral': ' ', 'festival': ' ', 'prize': ' ', 'pop': ' ', 'acapella': ' ', ';': ' ', 'diploma': ' ', 'acappella': ' ', 'ethnic': ' ', 'floice': ' ', 'amaze': ' ', 'outperform': ' ', 'philippines': ' ', 'awarded': ' ', 'medals': ' ', 'grumpy': ' ', 'guarding': ' ', 'crazy': ' ', 'rude': ' ', 'traumatized': ' ', 'guard': ' ', 'anymore': ' ', 'annoyed': ' ', 'absentee': ' ', 'leave': ' ', 'yelled': ' ', 'cheating': ' ', 'racist': ' ', 'repeatedly': ' ', 'respond': ' ', 'patient': ' ', 'guards': ' ', 'arbitrary': ' ', 'bros': ' ', 'receptionist': ' ', 'secretary': ' ', 'dean': ' ', 'angrily': ' ', 'shouted': ' ', 'reprimand': ' ', 'employees': ' ', 'thank': ' ', 'angry': ' ', 'wrong': ' ', 'pants': ' ', 'feet': ' ', 'roundabout': ' ', 'kind': ' ', 'likes': ' ', 'practicum': ' ', 'parked': ' ', 'scolded': ' ', 'saying': ' ', 'manners': ' ', 'true': ' ', 'went': ' ', 'cafeteria': ' ', 'court': ' ', 'context': ' ', 'lady': ' ', 'chose': ' ', 'seat': ' ', 'understood': ' ', 'jobdesk': ' ', 'remove': ' ', 'motorbike': ' ', 'pretended': ' ', 'fixing': ' ', 'motorbikes': ' ', 'putting': ' ', 'dull': ' ', 'hosting': ' ', 'tilawatil': ' ', 'musabaqoh': ' ', 'seeds': ' ', 'delegation': ' ', 'caravans': ' ', 'mtqmn': ' ', 'begun': ' ', 'socialization': ' ', 'validation': ' ', 'dti': ' ', 'talent': ' ', 'bpti': ' ', 'fifteen': ' ', 'contingent': ' ', 'numbering': ' ', 'targeted': ' ', 'champions': ' ', 'recitation': ' ', 'defeating': ' ', 'deciding': ' ', 'determining': ' ', 'attachment': ' ', 'board': ' ', 'identify': ' ', 'successor': ' ', 'ulama': ' ', 'successors': ' ', 'truly': ' ', 'liquid': ' ', 'smoke': ' ', 'empower': ' ', 'meraki': ' ', 'wiyata': ' ', 'eunoia': ' ', 'tries': ' ', 'youth': ' ', 'researcher': ' ', 'tanoto': ' ', 'pyrolysis': ' ', 'pest': ' ', 'repellents': ' ', 'distillation': ' ', 'condensation': ' ', 'vapour': ' ', 'combustion': ' ', 'directly': ' ', 'indirectly': ' ', 'steam': ' ', 'compounds': ' ', 'coconut': ' ', 'husk': ' ', 'husks': ' ', 'rice': ' ', 'twigs': ' ', 'pesticide': ' ', 'price': ' ', 'cheap': ' ', 'rupiah': ' ', 'attractive': ' ', 'tested': ' ', 'crystal': ' ', 'guava': ' ', 'farming': ' ', 'monalisa': ' ', 'monitoring': ' ', 'nutrition': ' ', 'height': ' ', 'conductivity': ' ', 'automation': ' ', 'newly': ' ', 'renovated': ' ', 'toilet': ' ', 'destroyed': ' ', 'flsuhing': ' ', 'closet': ' ', 'damaged': ' ', 'floors': ' ', 'muddy': ' ', 'inhabited': ' ', 'educated': ' ', 'peak': ' ', 'scale': ' ', 'appreciates': ' ', 'consisting': ' ', 'bronze': ' ', 'poster': ' ', 'branch': ' ', 'presentation': ' ', 'revitalisation': ' ', 'entities': ' ', 'pr': ' ', 'puapt': ' ', 'ta': ' ', 'measured': ' ', 'indicators': ' ', 'iku': ' ', 'budget': ' ', 'trillion': ' ', 'schemes': ' ', 'inter': ' ', 'investing': ' ', 'productivity': ' ', 'agreed': ' ', 'invest': ' ', 'safety': ' ', 'railway': ' ', 'crossings': ' ', 'sugiono': ' ', 'map': ' ', 'awareneess': ' ', 'driving': ' ', 'dad': ' ', 'utilising': ' ', 'resembles': ' ', 'warnings': ' ', 'motorists': ' ', 'going': ' ', 'across': ' ', 'crossing': ' ', 'driver': ' ', 'connection': ' ', 'mitigating': ' ', 'accidents': ' ', 'reflecting': ' ', 'guarded': ' ', 'officers': ' ', 'crossbars': ' ', 'recognising': ' ', 'accountable': ' ', 'fair': ' ', 'jumping': ' ', 'jumped': ' ', 'unknown': ' ', 'gathered': ' ', 'med': ' ', 'fell': ' ', 'police': ' ', 'woman': ' ', 'initials': ' ', 'ls': ' ', 'resident': ' ', 'karangploso': ' ', 'lowokwaru': ' ', 'chief': ' ', 'akp': ' ', 'anton': ' ', 'collection': ' ', 'ipa': ' ', 'resigned': ' ', 'disrupted': ' ', 'illness': ' ', 'investigation': ' ', 'scene': ' ', 'crime': ' ', 'concluded': ' ', 'suspected': ' ', 'committing': ' ', 'dropped': ' ', 'fikom': ' ', 'evidences': ' ', 'items': ' ', 'incision': ' ', 'scars': ' ', 'left': ' ', 'pulse': ' ', 'bleeding': ' ', 'wrapped': ' ', 'hansaplast': ' ', 'sweep': ' ', 'belonged': ' ', 'belongings': ' ', 'slippers': ' ', 'glasses': ' ', 'examined': ' ', 'evacuated': ' ', 'morgue': ' ', 'rsud': ' ', 'saiful': ' ', 'anwar': ' ', 'rssa': ' ', 'contacted': ' ', 'inform': ' ', 'incident': ' ', 'realised': ' ', 'sufficient': ' ', 'hustle': ' ', 'bustle': ' ', 'palestinians': ' ', 'israeli': ' ', 'zionists': ' ', 'un': ' ', 'commission': ' ', 'sending': ' ', 'humanitarian': ' ', 'violations': ' ', 'palestine': ' ', 'member': ' ', 'sidelines': ' ', 'declaration': ' ', 'samantha': ' ', 'krida': ' ', 'soon': ' ', 'scheduled': ' ', 'fundraising': ' ', 'raising': ' ', 'portable': ' ', 'dialysis': ' ', 'pursue': ' ', 'researched': ' ', 'electrical': ' ', 'thorium': ' ', 'net': ' ', 'zero': ' ', 'transition': ' ', 'nuclear': ' ', 'uranium': ' ', 'safer': ' ', 'radioactive': ' ', 'economical': ' ', 'feasible': ' ', 'commercially': ' ', 'density': ' ', 'supply': ' ', 'guaranteed': ' ', 'acceptable': ' ', 'feb': ' ', 'wuryan': ' ', 'andayani': ' ', 'selected': ' ', 'candidate': ' ', 'garuda': ' ', 'auditorium': ' ', 'ri': ' ', 'muslimah': ' ', 'entrepreneurs': ' ', 'association': ' ', 'ipemi': ' ', 'framework': ' ', 'mother': ' ', 'atmosphere': ' ', 'teamwork': ' ', 'clan': ' ', 'emphasises': ' ', 'mentor': ' ', 'tree': ' ', 'speaker': ' ', 'scoring': ' ', 'contributions': ' ', 'participant': ' ', 'accelerating': ' ', 'mentioned': ' ', 'superior': ' ', 'pronojiwo': ' ', 'lumajang': ' ', 'assisting': ' ', 'orchid': ' ', 'dadaprejo': ' ', 'junrejo': ' ', 'sub': ' ', 'candimulyo': ' ', 'jombang': ' ', 'industries': ' ', 'online': ' ', 'developments': ' ', 'wanting': ' ', 'master': ' ', 'influence': ' ', 'organisations': ' ', 'adopt': ' ', 'lifestyle': ' ', 'mindset': ' ', 'hard': ' ', 'ingrid': ' ', 'kansil': ' ', 'excel': ' ', 'laughed': ' ', 'pandjaitan': ' ', 'jasmine': ' ', 'facility': ' ', 'doctor': ' ', 'intention': ' ', 'queue': ' ', 'participates': ' ', 'lonely': ' ', 'phenonema': ' ', 'mean': ' ', 'unglued': ' ', 'vulnerable': ' ', 'equality': ' ', 'ultimately': ' ', 'ari': ' ', 'causes': ' ', 'commit': ' ', 'considers': ' ', 'adequate': ' ', 'preliminary': ' ', 'perception': ' ', 'predecessor': ' ', 'deny': ' ', 'systematic': ' ', 'review': ' ', 'decreases': ' ', 'clinical': ' ', 'depression': ' ', 'sleep': ' ', 'traumatic': ' ', 'stressful': ' ', 'bullying': ' ', 'trust': ' ', 'trauma': ' ', 'suicides': ' ', 'mentality': ' ', 'suggested': ' ', 'diagnose': ' ', 'educate': ' ', 'sorting': ' ', 'consume': ' ', 'news': ' ', 'supportive': ' ', 'deterred': ' ', 'typhoid': ' ', 'practitioner': ' ', 'practice': ' ', 'recovered': ' ', 'raya': ' ', 'alliance': ' ', 'peaceful': ' ', 'elections': ' ', 'provocation': ' ', 'voiced': ' ', 'limits': ' ', 'adhering': ' ', 'applicable': ' ', 'executives': ' ', 'packaged': ' ', 'platform': ' ', 'theme': ' ', 'scroll': ' ', 'present': ' ', 'delivered': ' ', 'speech': ' ', 'reinforce': ' ', 'escorting': ' ', 'began': ' ', 'unisma': ' ', 'rayhan': ' ', 'khajri': ' ', 'criticising': ' ', 'officials': ' ', 'expressing': ' ', 'opinions': ' ', 'limitation': ' ', 'pak': ' ', 'joko': ' ', 'duties': ' ', 'jokowi': ' ', 'puan': ' ', 'maharani': ' ', 'megawati': ' ', 'submitted': ' ', 'l': ' ', 'er': ' ', 'jurdil': ' ', 'secret': ' ', 'honest': ' ', 'voicing': ' ', 'justice': ' ', 'truth': ' ', 'influenced': ' ', 'interests': ' ', 'overseeing': ' ', 'supervising': ' ', 'entire': ' ', 'moral': ' ', 'honesty': ' ', 'foundations': ' ', 'presenting': ' ', 'promoting': ' ', 'political': ' ', 'dialogue': ' ', 'peace': ' ', 'headache': ' ', 'chest': ' ', 'referral': ' ', 'evening': ' ', 'fever': ' ', 'nausea': ' ', 'stomach': ' ', 'bloating': ' ', 'eh': ' '}\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# mengisi value dari setiap key di dictionary dengan stemming dari kata tersebut\n",
+        "for term in term_dict:\n",
+        "  term_dict[term] = stemming(term)\n",
+        "# menyimpan key dari kata yang tidak ter stem\n",
+        "unstemmed = []\n",
+        "for term in term_dict:\n",
+        "  if term == term_dict[term]:\n",
+        "    unstemmed.append(term)\n",
+        "# menghapus kata yang tidak terstem agar tidak memakan waktu saat stemming\n",
+        "for term in unstemmed:\n",
+        "  del term_dict[term]"
+      ],
+      "metadata": {
+        "id": "UsLPbuDwy7q9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "for term in term_dict:\n",
+        "  term_dict[term] =  str(TextBlob(term_dict[term]).correct())"
+      ],
+      "metadata": {
+        "id": "TqzkeAvZ0msC"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(term_dict)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wZRpmpSQzNzk",
+        "outputId": "4c3b896c-5145-41d5-ce06-6519aef356a7"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "{'seeks': 'seek', 'reduction': 'reduce', 'greenhouse': 'greenhouse', 'gas': 'ga', 'emissions': 'miss', 'government': 'govern', 'reduce': 'reduce', 'efforts': 'effort', 'reducing': 'reduce', 'national': 'nation', 'sustainability': 'sustain', 'emission': 'miss', 'economic': 'economy', 'value': 'value', 'mechanism': 'mean', 'managing': 'manage', 'called': 'call', 'management': 'manage', 'prioritizes': 'priority', 'preserving': 'preserve', 'nature': 'nature', 'planting': 'plant', 'endemic': 'ended', 'plants': 'plant', 'natural': 'nature', 'ecosystems': 'ecosystem', 'production': 'product', 'purpose': 'purpose', 'preservation': 'preserve', 'buffering': 'suffer', 'rainwater': 'railway', 'absorption': 'absorb', 'erosion': 'gros', 'yes': 'ye', 'carried': 'carry', 'positive': 'post', 'maintaining': 'maintain', 'addition': 'admit', 'protected': 'protect', 'hectares': 'hectare', 'google': 'good', 'maps': 'map', 'future': 'future', 'existing': 'exist', 'trees': 'tree', 'planned': 'plan', 'capacity': 'cap', 'replace': 'replace', 'needs': 'need', 'reminds': 'remind', 'careful': 'care', 'circulation': 'circus', 'fraudulent': 'fraud', 'letters': 'letter', 'single': 'single', 'fees': 'fee', 'asks': 'ask', 'listed': 'list', 'application': 'applied', 'illegal': 'killed', 'levies': 'levi', 'bills': 'bill', 'ensuring': 'ensue', 'commerce': 'commerce', 'stated': 'state', 'circulated': 'circus', 'emphasized': 'emphasis', 'procedure': 'procedure', 'paying': 'pay', 'explained': 'explain', 'website': 'west', 'transactions': 'transact', 'using': 'use', 'personal': 'person', 'individual': 'individu', 'hoped': 'hope', 'deceived': 'deceive', 'worried': 'worry', 'anticipate': 'anticus', 'implementation': 'implement', 'registration': 'register', 'achievement': 'achieve', 'prospective': 'prospect', 'prepare': 'prepare', 'percentage': 'percentage', 'estimated': 'estime', 'accepted': 'accept', 'route': 'rout', 'study': 'study', 'programmes': 'program', 'favoured': 'favour', 'favourite': 'favourite', 'reference': 'refer', 'admissions': 'admits', 'opens': 'open', 'entry': 'entry', 'channels': 'channel', 'quotas': 'quota', 'opened': 'open', 'achievements': 'achieve', 'tests': 'test', 'cooperate': 'cooper', 'party': 'part', 'promises': 'promise', 'advantages': 'advantage', 'charged': 'charge', 'consists': 'consist', 'cards': 'card', 'international': 'inter', 'evidenced': 'evident', 'certificate': 'certify', 'disability': 'distal', 'disabilities': 'distal', 'accompanied': 'accompany', 'volunteers': 'count', 'fulfilled': 'fulfil', 'requirements': 'require', 'graduate': 'gradual', 'working': 'work', 'starting': 'start', 'salary': 'salary', 'average': 'average', 'months': 'month', 'graduating': 'gradual', 'college': 'college', 'registered': 'resist', 'increasing': 'increase', 'increases': 'increase', 'scattered': 'scatter', 'prepared': 'prepare', 'namely': 'name', 'vocational': 'vocal', 'teaching': 'teach', 'internships': 'internship', 'studies': 'study', 'certified': 'certify', 'exchange': 'exchange', 'practitioners': 'partition', 'attention': 'attend', 'aspects': 'aspect', 'satisfaction': 'satisfact', 'majority': 'major', 'satisfied': 'satisfy', 'participated': 'particle', 'agree': 'are', 'completing': 'complete', 'additional': 'admit', 'competencies': 'comet', 'skills': 'skill', 'thinking': 'think', 'solving': 'sole', 'critical': 'critic', 'creativity': 'creative', 'challenges': 'challenge', 'education': 'duc', 'easy': 'east', 'direction': 'direct', 'funding': 'fund', 'facilities': 'fail', 'grateful': 'grate', 'appreciated': 'appreci', 'educating': 'duc', 'activity': 'active', 'formulate': 'formal', 'shared': 'share', 'values': 'value', 'improve': 'improve', 'quality': 'quality', 'recognition': 'recognize', 'formulating': 'formal', 'strategies': 'strategic', 'formation': 'format', 'resource': 'resource', 'character': 'character', 'sharing': 'share', 'experiences': 'expert', 'improving': 'improve', 'mobilise': 'mobility', 'cooperation': 'cooper', 'achieve': 'achieve', 'university': 'univers', 'ranking': 'rank', 'offers': 'offer', 'allows': 'allow', 'choose': 'choose', 'register': 'resist', 'lectures': 'lecture', 'thesis': 'these', 'completed': 'complete', 'doctoral': 'doctor', 'acceleration': 'accuser', 'complete': 'complete', 'accepting': 'accept', 'minimal': 'minims', 'conferring': 'confer', 'honoris': 'honor', 'doctorate': 'doctor', 'degree': 'degree', 'strategic': 'strategy', 'conferral': 'confer', 'stages': 'stage', 'regulations': 'regal', 'approved': 'approve', 'added': 'ad', 'contribution': 'contribute', 'ideas': 'idea', 'business': 'busy', 'transformation': 'transform', 'proves': 'prove', 'dedication': 'devil', 'contributing': 'contribute', 'seeding': 'seed', 'knowledge': 'knowledge', 'forums': 'forum', 'contributed': 'contribute', 'country': 'country', 'pandemic': 'handed', 'recovery': 'recovery', 'encourages': 'encourage', 'distribution': 'distribute', 'earmarked': 'remark', 'construction': 'construct', 'sarpras': 'supra', 'assistance': 'assist', 'educators': 'duc', 'alignments': 'align', 'evident': 'evil', 'composition': 'composite', 'respected': 'respect', 'domestically': 'domes', 'positions': 'post', 'paths': 'path', 'surpassed': 'surplus', 'named': 'name', 'alumnus': 'calumny', 'created': 'great', 'organic': 'organ', 'waste': 'wast', 'seeing': 'see', 'surrounding': 'surround', 'situation': 'situate', 'certainly': 'certainly', 'balance': 'balance', 'environment': 'environs', 'makes': 'make', 'creates': 'great', 'points': 'point', 'animal': 'aim', 'cultivation': 'curtis', 'fertiliser': 'fertile', 'development': 'develop', 'computer': 'compute', 'programs': 'program', 'majors': 'major', 'following': 'follow', 'medicine': 'medicine', 'communication': 'common', 'psychology': 'psychology', 'engineering': 'engine', 'informatics': 'informal', 'pharmacy': 'pharmaci', 'accounting': 'account', 'systems': 'system', 'parking': 'park', 'counselling': 'counsel', 'services': 'service', 'affairs': 'affair', 'facilitate': 'facility', 'complaints': 'complaint', 'service': 'service', 'maybe': 'may', 'limited': 'limit', 'academics': 'academy', 'receiving': 'receive', 'applicants': 'applied', 'recipients': 'recipe', 'participants': 'particle', 'opportunities': 'opportune', 'course': 'course', 'accreditation': 'credit', 'assurance': 'assure', 'qualifications': 'qualify', 'comfortable': 'comfort', 'city': 'city', 'attraction': 'attract', 'assessment': 'assess', 'includes': 'include', 'enthusiasts': 'enthusiast', 'scientific': 'scientific', 'clusters': 'cluster', 'medical': 'media', 'nursing': 'nurse', 'nutritional': 'putrid', 'pharmaceutical': 'pharmaceut', 'tightness': 'tight', 'relations': 'relate', 'competition': 'competent', 'succeeded': 'succeed', 'impressing': 'impress', 'jury': 'jury', 'designing': 'design', 'applications': 'applied', 'suicide': 'suicide', 'prevention': 'prevent', 'artificial': 'artifice', 'intelligence': 'intellig', 'actions': 'action', 'leaves': 'leave', 'impression': 'impress', 'pity': 'piti', 'choice': 'choice', 'speaking': 'speak', 'silenced': 'silent', 'members': 'member', 'developer': 'develop', 'software': 'software', 'hardware': 'hardware', 'focuses': 'focus', 'handling': 'hand', 'stunting': 'stung', 'realise': 'realise', 'sustainable': 'sustain', 'goals': 'goal', 'features': 'feature', 'convenience': 'convent', 'checking': 'check', 'users': 'user', 'baby': 'baby', 'entering': 'enter', 'needed': 'need', 'answering': 'answer', 'questions': 'question', 'funds': 'fund', 'consultation': 'consult', 'experts': 'expert', 'names': 'name', 'published': 'publish', 'participating': 'particle', 'opportunity': 'opportune', 'developing': 'develop', 'technology': 'technology', 'solutions': 'slut', 'society': 'society', 'required': 'require', 'create': 'great', 'innovative': 'into', 'solve': 'sole', 'problems': 'problem', 'environmental': 'environment', 'situations': 'situate', 'ability': 'bail', 'title': 'till', 'delegate': 'deep', 'technological': 'technology', 'singapore': 'singapor', 'united': 'unit', 'nations': 'nation', 'prestigious': 'prestige', 'conference': 'confer', 'simulation': 'soul', 'managed': 'manage', 'advanced': 'advance', 'delegates': 'deep', 'friends': 'friend', 'inspiration': 'inspire', 'evaluate': 'value', 'debating': 'debt', 'diplomacy': 'diplomacy', 'increase': 'increase', 'try': 'try', 'recognised': 'recognise', 'large': 'large', 'challenge': 'challenge', 'demonstration': 'demonstr', 'interested': 'interest', 'exaggerates': 'eager', 'quantity': 'quantity', 'unimpressive': 'impress', 'arrogant': 'arrow', 'politics': 'polite', 'active': 'active', 'chasing': 'chase', 'grades': 'grade', 'overrated': 'over', 'serious': 'serious', 'unqualified': 'unqualified', 'culture': 'culture', 'shocked': 'shock', 'problematic': 'problems', 'arrogantly': 'arrogant', 'classification': 'classic', 'parents': 'parent', 'income': 'income', 'equipment': 'equip', 'inadequate': 'inadequ', 'inside': 'inside', 'appearance': 'appear', 'causing': 'cause', 'leading': 'lead', 'jams': 'jam', 'excessive': 'excess', 'branding': 'brand', 'advantage': 'advantage', 'knows': 'know', 'fortune': 'fortune', 'labs': 'lab', 'competent': 'comet', 'faculties': 'faculty', 'inequality': 'inert', 'doubtful': 'doubt', 'corruption': 'corrupt', 'collusion': 'callus', 'nepotism': 'depot', 'disgusted': 'disgust', 'hatters': 'matter', 'learning': 'learn', 'location': 'local', 'stingy': 'sting', 'facilitating': 'facility', 'bureaucracy': 'bureaucracy', 'rectorate': 'rector', 'library': 'library', 'ugly': 'ugly', 'thirsty': 'thirst', 'exposure': 'exposure', 'sorry': 'sorry', 'abandoned': 'abandon', 'sports': 'sport', 'fields': 'field', 'lecturer': 'lecture', 'invites': 'invite', 'contemplate': 'contempt', 'greatness': 'great', 'muslims': 'muslin', 'permission': 'permits', 'feeling': 'feel', 'lowly': 'lowly', 'knocking': 'knock', 'holy': 'hold', 'forgiveness': 'forgive', 'family': 'family', 'involved': 'involve', 'supplying': 'supply', 'ready': 'ready', 'concrete': 'concert', 'batching': 'batch', 'industry': 'industry', 'closed': 'close', 'tightly': 'tightly', 'rebels': 'rebel', 'commitment': 'commit', 'fasting': 'fast', 'reminder': 'remind', 'sins': 'sin', 'closely': 'close', 'tears': 'tear', 'soaked': 'soak', 'prostrations': 'prostrate', 'prayers': 'prayer', 'trembles': 'tremble', 'remembering': 'remember', 'almighty': 'almighty', 'culmination': 'cummins', 'cleaning': 'clean', 'blessings': 'bless', 'celebrated': 'clear', 'reflection': 'reflect', 'meeting': 'meet', 'accordance': 'accord', 'fasts': 'fast', 'reasons': 'reason', 'hopes': 'hope', 'returning': 'return', 'reminded': 'remind', 'feelings': 'feel', 'desires': 'desire', 'invaluable': 'invade', 'runs': 'run', 'welcome': 'welcome', 'celebration': 'clear', 'community': 'common', 'closing': 'close', 'series': 'peri', 'festivities': 'festive', 'organized': 'organ', 'religious': 'relief', 'guidance': 'guidance', 'breaking': 'break', 'graduation': 'gradual', 'memorizing': 'memory', 'donations': 'donate', 'orphans': 'orphan', 'presented': 'present', 'essence': 'essence', 'attended': 'attend', 'leaders': 'leader', 'lecturers': 'lecture', 'studying': 'study', 'hannover': 'cannot', 'messe': 'mess', 'axotic': 'at', 'presents': 'present', 'trading': 'trade', 'fisheries': 'fishery', 'expansion': 'expanse', 'europe': 'europe', 'fishery': 'fishery', 'products': 'product', 'recirculated': 'recircul', 'commodity': 'common', 'focus': 'focus', 'developed': 'develop', 'lives': 'live', 'tropical': 'trophic', 'climate': 'climate', 'adaptive': 'adapt', 'previously': 'previous', 'passed': 'pass', 'competitions': 'competent', 'received': 'receive', 'pimnas': 'vilna', 'awards': 'award', 'planning': 'plan', 'industrial': 'industry', 'exhibition': 'exhibit', 'deutsche': 'dutch', 'cooperating': 'cooper', 'countries': 'country', 'trusted': 'trust', 'ministries': 'ministry', 'institutions': 'institute', 'square': 'square', 'meters': 'peter', 'reached': 'reach', 'increased': 'increase', 'compared': 'compare', 'holding': 'hold', 'computers': 'compute', 'rooms': 'room', 'netted': 'net', 'talents': 'talent', 'capable': 'capable', 'reviewing': 'review', 'advertisement': 'advertise', 'reviewed': 'review', 'locations': 'local', 'agricultural': 'agriculture', 'economics': 'economy', 'visited': 'visit', 'representatives': 'repress', 'committee': 'committed', 'confessed': 'confess', 'assessed': 'assess', 'entrance': 'entrance', 'asked': 'ask', 'soothing': 'south', 'electronics': 'electron', 'polytechnic': 'polytechnic', 'applies': 'apply', 'protocols': 'protocol', 'provisions': 'proves', 'weeks': 'week', 'cases': 'case', 'ensure': 'ensue', 'healthy': 'health', 'guns': 'gun', 'temperature': 'temperature', 'detection': 'detect', 'monitors': 'monitor', 'chemical': 'chemical', 'petition': 'petit', 'villages': 'village', 'village': 'village', 'atomic': 'atom', 'achieved': 'achieve', 'passing': 'pass', 'selections': 'select', 'prototype': 'prototyp', 'concepts': 'concept', 'teams': 'team', 'respective': 'respect', 'prototypes': 'prototyp', 'judges': 'judge', 'undergraduate': 'undergradu', 'institute': 'institute', 'aims': 'aim', 'demonstrate': 'demonstr', 'reactions': 'reaction', 'calculate': 'call', 'advance': 'advance', 'trials': 'trial', 'carries': 'carry', 'pressurized': 'pressure', 'filtered': 'filter', 'regulator': 'regal', 'moves': 'move', 'assisted': 'assist', 'mechanical': 'mean', 'valve': 'valve', 'moving': 'move', 'produce': 'produce', 'derived': 'derive', 'decomposition': 'decomposing', 'comes': 'come', 'peroxide': 'peroxide', 'accelerate': 'accuser', 'echoed': 'echo', 'achieving': 'achieve', 'carrying': 'carry', 'cars': 'car', 'racing': 'race', 'chemicals': 'chemical', 'excelled': 'expel', 'superiority': 'superior', 'generated': 'genet', 'collaborating': 'collar', 'initiated': 'into', 'establishment': 'establish', 'robotics': 'root', 'material': 'mater', 'collaborations': 'collar', 'innovation': 'into', 'consider': 'consider', 'important': 'import', 'partners': 'partner', 'collaboration': 'collar', 'focused': 'focus', 'applied': 'apply', 'molecules': 'molecule', 'sophistication': 'sophism', 'explore': 'explore', 'beneficial': 'benefit', 'making': 'make', 'robots': 'root', 'established': 'establish', 'choosing': 'choose', 'ranked': 'rank', 'directed': 'direct', 'reputable': 'repute', 'journals': 'journal', 'encourage': 'encourage', 'cooperated': 'cooper', 'reads': 'read', 'initially': 'into', 'sparked': 'spark', 'claimed': 'claim', 'difficulty': 'difficult', 'tried': 'try', 'resolved': 'resolve', 'initial': 'into', 'physically': 'physics', 'mentally': 'mental', 'ranging': 'rang', 'disorder': 'discord', 'articles': 'article', 'videos': 'video', 'sufferers': 'suffer', 'disorders': 'discord', 'feature': 'feature', 'emergency': 'emerge', 'severe': 'never', 'communicating': 'common', 'psychologists': 'psychologist', 'psychiatrists': 'psychiatric', 'expressions': 'express', 'designed': 'design', 'results': 'result', 'satisfying': 'satisfy', 'category': 'category', 'invention': 'invent', 'executive': 'execute', 'dismissed': 'dismiss', 'accused': 'accuse', 'muzzling': 'muzzle', 'democratization': 'democrat', 'president': 'preside', 'dismissal': 'dismiss', 'summoning': 'summon', 'caused': 'cause', 'protested': 'protest', 'awarding': 'award', 'titles': 'till', 'representative': 'repress', 'freezing': 'free', 'considered': 'consider', 'sovereignty': 'sovereignty', 'prohibition': 'prohibit', 'inhibiting': 'inhibit', 'condemned': 'condemn', 'threatened': 'threaten', 'removal': 'remove', 'attitude': 'attitude', 'freezes': 'free', 'inhibits': 'inhibit', 'administrative': 'administer', 'financial': 'finance', 'rights': 'right', 'oriented': 'orient', 'facilitated': 'facility', 'orientation': 'orient', 'stopping': 'stop', 'muzzled': 'muzzle', 'currently': 'current', 'classified': 'classify', 'units': 'unit', 'legislative': 'legs', 'supervisory': 'supervisors', 'functions': 'function', 'legitimacy': 'legitimate', 'sectors': 'sector', 'completely': 'complete', 'irregularities': 'irregular', 'transparency': 'transport', 'deputy': 'deputy', 'generation': 'genet', 'supervision': 'supervise', 'oversees': 'verse', 'authority': 'author', 'rejects': 'reject', 'forms': 'form', 'suppression': 'suppress', 'democracy': 'democracy', 'asking': 'ask', 'restore': 'restore', 'bringing': 'bring', 'denied': 'den', 'alleged': 'alley', 'freeze': 'free', 'discussed': 'discuss', 'motivated': 'motive', 'demonstrations': 'demonstr', 'criticism': 'critic', 'conducted': 'conduct', 'revealed': 'reveal', 'reconcile': 'reconcile', 'intermediary': 'intermediary', 'rejected': 'reject', 'cowardice': 'cowardice', 'reply': 'reply', 'invited': 'invite', 'engage': 'engage', 'debate': 'debt', 'responded': 'respond', 'office': 'office', 'waiting': 'wait', 'apology': 'apology', 'publicly': 'publicly', 'apologize': 'apology', 'integrity': 'inter', 'inaugurated': 'inaugural', 'oration': 'rat', 'excellence': 'expel', 'plus': 'plus', 'useful': 'use', 'practices': 'practice', 'responsible': 'response', 'supporting': 'support', 'digital': 'digit', 'influential': 'influence', 'managerial': 'manager', 'aspirations': 'astir', 'levels': 'level', 'conveyed': 'convey', 'raised': 'rays', 'principles': 'principle', 'accommodation': 'accommod', 'advocacy': 'advocacy', 'recommended': 'recommend', 'balanced': 'balance', 'perceptions': 'percent', 'roles': 'role', 'synchronization': 'synchron', 'degradation': 'dead', 'profession': 'profess', 'adopting': 'adopt', 'dissertation': 'dissent', 'entitled': 'entity', 'plenary': 'plenary', 'technocratic': 'technocrat', 'balances': 'balance', 'spiritual': 'spirit', 'balancing': 'balance', 'integrates': 'inter', 'dimensions': 'times', 'sees': 'see', 'welfare': 'welfare', 'phases': 'phase', 'poverty': 'poverty', 'alleviation': 'alley', 'resilience': 'result', 'livability': 'liable', 'happiness': 'happy', 'responsive': 'response', 'essential': 'essential', 'godly': 'godly', 'weakness': 'weak', 'measure': 'measure', 'alone': 'along', 'standards': 'standard', 'pluralistic': 'plurality', 'organism': 'organ', 'humans': 'human', 'dwellers': 'dweller', 'capital': 'capital', 'physical': 'physics', 'perspective': 'respect', 'follows': 'follow', 'cycle': 'cycle', 'strengthening': 'strengthen', 'psychological': 'psychology', 'admitted': 'admit', 'intimidation': 'timid', 'fighting': 'fight', 'silencing': 'silent', 'beginning': 'begin', 'resistance': 'resist', 'threats': 'threat', 'discourage': 'discourage', 'infrastructure': 'infrastructure', 'sycophants': 'syncope', 'bureaucrats': 'bureaucratic', 'talked': 'talk', 'election': 'elect', 'lazy': 'lazy', 'complaining': 'complain', 'neglected': 'neglect', 'underwent': 'under', 'funded': 'fund', 'majoring': 'major', 'japanese': 'japanese', 'literature': 'literature', 'cumlaude': 'cumlaud', 'humanities': 'human', 'occupy': 'occupy', 'followed': 'follow', 'coordinating': 'cordon', 'ministry': 'ministry', 'oversee': 'verse', 'revitalization': 'relit', 'training': 'train', 'presidential': 'president', 'regulation': 'regal', 'launched': 'launch', 'competence': 'comet', 'coordination': 'cordon', 'auspices': 'music', 'republic': 'republic', 'kemnaker': 'kemnak', 'unity': 'unite', 'certification': 'certify', 'potential': 'potent', 'lacking': 'lack', 'links': 'link', 'backwards': 'backward', 'ppks': 'pp', 'finished': 'finish', 'agency': 'agent', 'investigate': 'investing', 'offenders': 'offend', 'investigated': 'investing', 'victims': 'victim', 'solution': 'slut', 'promising': 'promise', 'taking': 'take', 'concerned': 'concern', 'perpetrator': 'pepper', 'wanted': 'want', 'violence': 'violence', 'posters': 'poster', 'pasted': 'past', 'handled': 'hand', 'duty': 'duty', 'protecting': 'protect', 'predators': 'great', 'criminal': 'origin', 'acts': 'act', 'wants': 'want', 'aware': 'war', 'visible': 'visible', 'charge': 'charge', 'perverts': 'prevent', 'reported': 'report', 'apathetic': 'apathy', 'continuation': 'continue', 'busy': 'busy', 'incompetent': 'income', 'resources': 'resource', 'utilization': 'until', 'banking': 'bank', 'literacy': 'literacy', 'inclusion': 'include', 'intermediaries': 'intermediary', 'committed': 'commit', 'islamic': 'slam', 'finance': 'finance', 'accommodate': 'accommod', 'utilized': 'until', 'customer': 'custom', 'customers': 'custom', 'cms': 'cm', 'savings': 'save', 'deposits': 'deposit', 'located': 'local', 'utilize': 'until', 'payments': 'payment', 'employee': 'employe', 'forestry': 'forestry', 'signed': 'sign', 'agreements': 'agreement', 'derivative': 'derive', 'understanding': 'understand', 'directorate': 'director', 'conservation': 'conserve', 'extension': 'extent', 'importance': 'import', 'creating': 'great', 'merely': 'mere', 'monotonous': 'monotony', 'procedures': 'procedure', 'processes': 'process', 'routines': 'routine', 'regional': 'region', 'agencies': 'agent', 'parties': 'part', 'benefits': 'benefit', 'impacts': 'impact', 'performance': 'perform', 'outputs': 'output', 'produced': 'produce', 'governance': 'govern', 'expected': 'expect', 'jointly': 'jointly', 'representing': 'repress', 'games': 'game', 'compete': 'comet', 'savate': 'sat', 'upcoming': 'upon', 'suppose': 'suppose', 'history': 'history', 'brings': 'bring', 'athletes': 'athlete', 'branches': 'branch', 'arts': 'art', 'karate': 'karay', 'qualify': 'qualify', 'represent': 'repress', 'athlete': 'athlete', 'marks': 'mark', 'rafie': 'raft', 'basketball': 'basketful', 'championships': 'championship', 'apatte': 'apart', 'energy': 'energy', 'efficient': 'effect', 'explains': 'explain', 'obesity': 'ones', 'factors': 'factor', 'professors': 'professor', 'bioenergy': 'bioenergi', 'continuous': 'continue', 'supercritical': 'supercrit', 'gasoline': 'gasoline', 'materials': 'mater', 'specifications': 'specie', 'machines': 'machine', 'availability': 'avail', 'contribute': 'contribute', 'gases': 'gase', 'guys': 'guy', 'boys': 'boy', 'fuels': 'fuel', 'replacing': 'replace', 'renewable': 'renew', 'necessity': 'recess', 'realized': 'realize', 'conversion': 'covers', 'explanation': 'explain', 'enhancement': 'enhance', 'alternative': 'alter', 'resolving': 'resolve', 'dispute': 'dispute', 'leniency': 'lenient', 'regulatory': 'regulatory', 'cartels': 'carted', 'constitutional': 'constitute', 'blossomed': 'blossom', 'salty': 'salt', 'private': 'privat', 'campuses': 'camps', 'forced': 'for', 'integrated': 'inter', 'agriculture': 'agriculture', 'centre': 'cent', 'independence': 'indeed', 'please': 'pleas', 'proposal': 'propos', 'imagine': 'imagine', 'institutional': 'institute', 'netizens': 'citizen', 'compare': 'compare', 'unhas': 'unna', 'responding': 'respond', 'tweets': 'sweet', 'stating': 'state', 'objections': 'object', 'apply': 'apply', 'waivers': 'waiter', 'nominal': 'women', 'declared': 'declare', 'coloured': 'colour', 'hilarious': 'filaria', 'casually': 'casual', 'selfie': 'self', 'styles': 'style', 'graduates': 'gradual', 'certificates': 'certify', 'interesting': 'interest', 'gestures': 'gesture', 'fortunately': 'fortune', 'continuing': 'continue', 'smiles': 'smile', 'wishes': 'wish', 'signals': 'signal', 'showing': 'show', 'eccentric': 'accent', 'uploaded': 'unload', 'praised': 'paris', 'willing': 'will', 'serve': 'serve', 'happy': 'happy', 'moments': 'moment', 'procession': 'process', 'dentistry': 'dentist', 'inauguration': 'inaugural', 'caries': 'care', 'diseases': 'disease', 'disease': 'disease', 'adversely': 'adverse', 'affects': 'affect', 'implications': 'implied', 'salivary': 'salivary', 'secretion': 'secret', 'eruption': 'erupt', 'permanent': 'german', 'liners': 'line', 'bacterial': 'bacteria', 'infection': 'infect', 'force': 'for', 'response': 'response', 'sciences': 'science', 'appreciate': 'appreci', 'ongoing': 'onto', 'basis': 'base', 'confirmed': 'confirm', 'promised': 'promise', 'investment': 'invest', 'lifetime': 'lifetime', 'scholarships': 'scholarship', 'employment': 'employ', 'contracts': 'contract', 'sessions': 'session', 'graduated': 'gradual', 'motivation': 'motive', 'credits': 'credit', 'laboratory': 'laboratory', 'forgetting': 'forget', 'defending': 'defend', 'anticancer': 'anticanc', 'effects': 'effect', 'extracts': 'extract', 'cells': 'cell', 'exploration': 'explore', 'treating': 'treat', 'cultures': 'culture', 'organizers': 'organ', 'entrepreneurial': 'entrepreneuri', 'academy': 'academic', 'groups': 'group', 'obligations': 'oblige', 'innovations': 'into', 'businesses': 'busy', 'actors': 'actor', 'competing': 'comet', 'dropping': 'drop', 'collaborate': 'collar', 'pursued': 'purse', 'thanks': 'thank', 'mobility': 'mobile', 'pessimistic': 'pessimist', 'dreamed': 'dream', 'discouraged': 'discourage', 'horizons': 'horizon', 'identity': 'went', 'helpful': 'help', 'prioritise': 'priority', 'classes': 'class', 'finishing': 'finish', 'lecture': 'lecture', 'conducts': 'conduct', 'assessments': 'assess', 'reputation': 'repute', 'routinely': 'routine', 'releases': 'release', 'continent': 'contain', 'requirement': 'require', 'discussion': 'discuss', 'involve': 'involve', 'meets': 'meet', 'outcomes': 'outcome', 'implemented': 'implement', 'relevant': 'rule', 'assignment': 'assign', 'mandatory': 'mandatory', 'policies': 'policy', 'stipulated': 'still', 'policy': 'policy', 'regulated': 'regal', 'determine': 'determine', 'suitable': 'suitable', 'options': 'option', 'terms': 'term', 'fulfilling': 'fulfil', 'mentioning': 'mention', 'handed': 'hand', 'assignments': 'assign', 'introduce': 'introduce', 'language': 'language', 'globalisation': 'global', 'dealing': 'deal', 'advances': 'advance', 'intercultural': 'intercultur', 'interactions': 'interact', 'claims': 'claim', 'flattered': 'flatter', 'cultural': 'culture', 'interaction': 'interact', 'bridges': 'bring', 'eyes': 'eye', 'pretty': 'pretty', 'hoping': 'hope', 'hours': 'hour', 'recreation': 'retreat', 'hobbies': 'hobby', 'socialise': 'socialist', 'developers': 'develop', 'supports': 'support', 'mobile': 'mobile', 'relaxing': 'relax', 'playing': 'play', 'togetherness': 'together', 'gaming': 'game', 'equipped': 'equip', 'asus': 'as', 'equally': 'equal', 'verbally': 'verbal', 'harassed': 'grass', 'witnesses': 'wit', 'evidence': 'evil', 'playstation': 'playstat', 'sefakultas': 'sefakulta', 'recreational': 'retreat', 'purposes': 'purpose', 'ideology': 'ideology', 'inspiring': 'inspire', 'works': 'work', 'facing': 'face', 'abolition': 'about', 'resulted': 'result', 'prices': 'price', 'fuelled': 'full', 'stoves': 'stove', 'pieces': 'piece', 'shells': 'shell', 'processed': 'process', 'briquettes': 'briquett', 'pellets': 'pellet', 'removed': 'remove', 'benefited': 'benefit', 'commemoration': 'commemor', 'icons': 'icon', 'individuals': 'individu', 'communities': 'common', 'plugs': 'plug', 'peeled': 'feel', 'renovate': 'remove', 'enlarged': 'enlarge', 'expanded': 'expand', 'table': 'table', 'crowded': 'crowd', 'noisy': 'noise', 'modernise': 'modern', 'possible': 'possible', 'downstairs': 'downstairs', 'borrowed': 'borrow', 'books': 'book', 'returned': 'return', 'chairs': 'chair', 'lights': 'light', 'reversed': 'rivers', 'weekends': 'weekend', 'replaced': 'replace', 'scary': 'scar', 'loose': 'look', 'tables': 'table', 'coffee': 'coffee', 'boarding': 'board', 'house': 'house', 'leaving': 'leave', 'conditioning': 'conduct', 'spacious': 'spacious', 'musty': 'must', 'moulded': 'mould', 'covered': 'cover', 'wallpaper': 'wallpap', 'updated': 'update', 'change': 'change', 'textbooks': 'textbook', 'schedule': 'schedule', 'opening': 'open', 'dizzy': 'dizzy', 'confused': 'confuse', 'messy': 'mess', 'rules': 'rule', 'extended': 'extend', 'operating': 'over', 'upstairs': 'upstairs', 'complicated': 'complex', 'luggage': 'luggage', 'switched': 'switch', 'transparent': 'transport', 'surprising': 'surprise', 'novelles': 'novel', 'cooled': 'cool', 'midwifery': 'midwife', 'develops': 'develop', 'profile': 'profit', 'elementary': 'elementary', 'suddenly': 'suddenly', 'environmentally': 'environment', 'cobs': 'cob', 'straws': 'straw', 'edible': 'evil', 'female': 'female', 'rofiaty': 'rofiati', 'requires': 'require', 'changes': 'change', 'internally': 'inter', 'externally': 'externa', 'update': 'update', 'breakthroughs': 'breakthrough', 'survive': 'survive', 'competitiveness': 'competent', 'flexible': 'flexible', 'fishing': 'fish', 'controlled': 'control', 'effectively': 'effect', 'collected': 'collect', 'population': 'soul', 'areas': 'area', 'stakeholders': 'statehood', 'manage': 'manage', 'marine': 'marin', 'components': 'common', 'ecology': 'color', 'biophysical': 'biophys', 'fishers': 'fishes', 'processors': 'processor', 'earthquake': 'earthquake', 'automatic': 'automatic', 'warning': 'warn', 'winners': 'winner', 'normally': 'normal', 'sleeping': 'sleep', 'trapezoidal': 'trapezoid', 'adds': 'add', 'aesthetics': 'aesthetic', 'uses': 'use', 'rechargeable': 'richard', 'battery': 'battery', 'recharge': 'richard', 'shaped': 'shape', 'batteries': 'battery', 'recharged': 'richard', 'costs': 'cost', 'included': 'include', 'marketing': 'market', 'selling': 'sell', 'upgrade': 'upgrade', 'diabetes': 'diet', 'mellitus': 'mellitu', 'invasive': 'ideas', 'glucometer': 'glucomet', 'intellectual': 'intellect', 'property': 'property', 'issued': 'issue', 'tools': 'tool', 'require': 'require', 'device': 'devil', 'strips': 'strip', 'sensors': 'senior', 'utilizing': 'until', 'spectroscopic': 'spectroscop', 'methods': 'method', 'fairly': 'fairly', 'usage': 'usage', 'wearing': 'wear', 'logging': 'log', 'anytime': 'anti', 'hormone': 'mormon', 'pumps': 'pump', 'overcome': 'overcome', 'exists': 'exist', 'presence': 'present', 'diabetics': 'diet', 'tangible': 'tangible', 'overcoming': 'overcome', 'postgraduate': 'postgradu', 'ceremony': 'ceremony', 'satisfactory': 'satisfactory', 'cumulative': 'curl', 'peers': 'peer', 'fluently': 'fluentli', 'classmates': 'classmat', 'consequence': 'consent', 'faced': 'face', 'missed': 'miss', 'demands': 'demand', 'lessons': 'lesson', 'mature': 'mature', 'communicate': 'common', 'officially': 'office', 'laude': 'land', 'predicate': 'predict', 'turns': 'turn', 'figure': 'figure', 'surprises': 'surprise', 'province': 'province', 'surprise': 'surprise', 'merce': 'mere', 'companies': 'company', 'operations': 'over', 'obtained': 'obtain', 'extraordinary': 'extraordinary', 'significant': 'signify', 'professional': 'profession', 'abilities': 'bail', 'qualified': 'qualify', 'perpusnas': 'perpusna', 'publisher': 'publish', 'economy': 'economic', 'oxalate': 'oval', 'processing': 'process', 'coagulation': 'coagula', 'surge': 'surg', 'contains': 'contain', 'dangerous': 'danger', 'allowed': 'allow', 'discharged': 'discharge', 'accumulation': 'accumul', 'sedimentation': 'sediment', 'pollution': 'polls', 'electrocoagulation': 'electrocoagul', 'extraction': 'extract', 'purification': 'purify', 'filtration': 'filtrat', 'realtime': 'reality', 'creative': 'creative', 'machine': 'machine', 'supported': 'support', 'sources': 'source', 'integration': 'inter', 'optimize': 'optic', 'algorithms': 'algorithm', 'automatically': 'automatic', 'probarameters': 'probaramet', 'efficiency': 'effect', 'conventional': 'convent', 'technologies': 'technology', 'dependence': 'depend', 'chinese': 'chinese', 'domestic': 'domes', 'antioxidants': 'antitoxic', 'aging': 'age', 'cosmeceuticals': 'cosmeceut', 'cosmeceutical': 'cosmeceut', 'moisturizer': 'moisture', 'formulations': 'formal', 'nanostructured': 'nanostructur', 'ingredients': 'inured', 'antioxidant': 'antitoxic', 'premature': 'premature', 'preparation': 'prepare', 'therapeutic': 'therapeutic', 'preparations': 'prepare', 'formulation': 'formal', 'marketed': 'market', 'department': 'depart', 'competed': 'comet', 'infrared': 'infra', 'serves': 'serve', 'relieve': 'relief', 'adding': 'ad', 'fashionable': 'fashion', 'menstruation': 'menstruat', 'prioritizing': 'priority', 'relieving': 'relief', 'comfortably': 'comfort', 'accessory': 'accessory', 'utilizes': 'until', 'abdominal': 'abdomen', 'connected': 'connect', 'refers': 'refer', 'objects': 'object', 'packs': 'pack', 'consciousness': 'conscious', 'interactive': 'interact', 'sites': 'site', 'smartcbe': 'smart', 'meditation': 'merit', 'regularly': 'regularly', 'awareness': 'war', 'assuming': 'assume', 'animals': 'aim', 'sounds': 'sound', 'recording': 'record', 'showed': 'show', 'nicotianae': 'nicotiana', 'structural': 'structure', 'recognize': 'record', 'damage': 'damage', 'mangrove': 'mangrov', 'prevented': 'prevent', 'attacked': 'attack', 'malignant': 'malign', 'destruction': 'district', 'vessels': 'vessel', 'roots': 'root', 'stalks': 'stalk', 'nutrients': 'nutrient', 'broadly': 'broadly', 'photosynthesis': 'photosynthesi', 'dies': 'die', 'worse': 'words', 'farmers': 'farmer', 'failure': 'failure', 'neuvilette': 'neuvilett', 'modification': 'modify', 'modify': 'modify', 'specific': 'specie', 'desired': 'desire', 'unpollution': 'unpollut', 'pollutants': 'polls', 'producing': 'produce', 'panels': 'panel', 'crisis': 'crisis', 'cleans': 'clean', 'produces': 'produce', 'intelligent': 'intellig', 'devices': 'devil', 'regulate': 'regal', 'guided': 'guide', 'security': 'secure', 'mathematics': 'mathemat', 'electric': 'elect', 'vehicle': 'vehicle', 'oxide': 'oxide', 'vehicles': 'vehicle', 'abundant': 'abound', 'evaluation': 'value', 'effective': 'effect', 'optimized': 'optic', 'discovered': 'disco', 'finding': 'find', 'baterry': 'baterri', 'surprised': 'surprise', 'assessing': 'assess', 'mixed': 'mix', 'physique': 'physics', 'beautiful': 'beauty', 'festival': 'festive', 'floice': 'floor', 'amaze': 'may', 'philippines': 'philippine', 'awarded': 'award', 'medals': 'medal', 'grumpy': 'grumpy', 'guarding': 'guard', 'crazy': 'crazy', 'traumatized': 'trauma', 'anymore': 'anymore', 'annoyed': 'annoy', 'absentee': 'absence', 'leave': 'leave', 'yelled': 'yell', 'cheating': 'cheat', 'repeatedly': 'repeatedly', 'guards': 'guard', 'arbitrary': 'arbitrary', 'bros': 'brow', 'secretary': 'secretary', 'angrily': 'angrily', 'shouted': 'shout', 'employees': 'employe', 'angry': 'angry', 'pants': 'part', 'likes': 'like', 'parked': 'park', 'scolded': 'scold', 'saying': 'say', 'manners': 'manner', 'lady': 'laid', 'remove': 'remove', 'motorbike': 'motorbik', 'pretended': 'pretend', 'fixing': 'fix', 'motorbikes': 'motorbik', 'putting': 'put', 'hosting': 'host', 'seeds': 'seed', 'delegation': 'deep', 'caravans': 'caravan', 'socialization': 'social', 'validation': 'valid', 'contingent': 'counting', 'numbering': 'number', 'targeted': 'target', 'champions': 'champion', 'recitation': 'recite', 'defeating': 'defeat', 'deciding': 'decide', 'determining': 'determine', 'attachment': 'attach', 'identify': 'identify', 'successors': 'successor', 'truly': 'truly', 'empower': 'elbow', 'tries': 'try', 'researcher': 'research', 'pyrolysis': 'pyrolysi', 'repellents': 'repel', 'distillation': 'distal', 'condensation': 'consent', 'combustion': 'combat', 'directly': 'directly', 'indirectly': 'indirectly', 'compounds': 'compound', 'husks': 'dusk', 'twigs': 'twig', 'pesticide': 'pesticid', 'attractive': 'attract', 'tested': 'test', 'farming': 'farm', 'monitoring': 'monitor', 'nutrition': 'putrid', 'conductivity': 'conduct', 'automation': 'atom', 'newly': 'newly', 'renovated': 'remove', 'destroyed': 'destroy', 'flsuhing': 'flushed', 'damaged': 'damage', 'floors': 'floor', 'muddy': 'muddy', 'inhabited': 'inhabit', 'educated': 'duc', 'appreciates': 'appreci', 'consisting': 'consist', 'bronze': 'bronze', 'presentation': 'present', 'revitalisation': 'devitalise', 'entities': 'entity', 'measured': 'measure', 'indicators': 'india', 'schemes': 'scheme', 'investing': 'invest', 'productivity': 'product', 'agreed': 'are', 'safety': 'safety', 'crossings': 'cross', 'driving': 'drive', 'utilising': 'utilise', 'resembles': 'resemble', 'warnings': 'warn', 'motorists': 'motorist', 'going': 'go', 'crossing': 'cross', 'connection': 'connect', 'mitigating': 'piti', 'accidents': 'acid', 'reflecting': 'reflect', 'guarded': 'guard', 'officers': 'office', 'crossbars': 'crossway', 'recognising': 'recognise', 'accountable': 'account', 'jumping': 'jump', 'jumped': 'jump', 'gathered': 'gather', 'police': 'policy', 'initials': 'into', 'resident': 'resin', 'collection': 'collect', 'resigned': 'resign', 'disrupted': 'disrupt', 'illness': 'ill', 'investigation': 'investing', 'concluded': 'conclude', 'suspected': 'suspect', 'committing': 'commit', 'dropped': 'drop', 'evidences': 'evil', 'items': 'item', 'incision': 'incise', 'scars': 'scar', 'pulse': 'pus', 'bleeding': 'bleed', 'wrapped': 'wrap', 'belonged': 'belong', 'belongings': 'belong', 'slippers': 'slipper', 'glasses': 'glass', 'examined': 'examine', 'evacuated': 'each', 'morgue': 'more', 'contacted': 'contact', 'incident': 'acid', 'realised': 'realise', 'sufficient': 'suffice', 'hustle': 'must', 'bustle': 'bustle', 'palestinians': 'palestinian', 'israeli': 'isa', 'zionists': 'unionist', 'commission': 'commits', 'sending': 'send', 'violations': 'violet', 'palestine': 'palestine', 'sidelines': 'sidelong', 'declaration': 'declare', 'scheduled': 'schedule', 'fundraising': 'fundrais', 'raising': 'rays', 'portable': 'portable', 'dialysis': 'dialysi', 'pursue': 'purse', 'researched': 'research', 'electrical': 'elect', 'transition': 'transit', 'radioactive': 'radiant', 'economical': 'economy', 'feasible': 'feasible', 'commercially': 'commerce', 'density': 'density', 'supply': 'supply', 'guaranteed': 'guarantee', 'acceptable': 'accept', 'selected': 'select', 'candidate': 'candid', 'entrepreneurs': 'entrepreneur', 'association': 'cassock', 'atmosphere': 'atmosphere', 'emphasises': 'emphasis', 'scoring': 'score', 'contributions': 'contribute', 'participant': 'particle', 'accelerating': 'accuser', 'mentioned': 'mention', 'assisting': 'assist', 'industries': 'industry', 'online': 'online', 'developments': 'develop', 'wanting': 'want', 'influence': 'influence', 'organisations': 'organs', 'lifestyle': 'lifestyle', 'laughed': 'laugh', 'jasmine': 'basin', 'facility': 'fail', 'intention': 'intent', 'participates': 'particle', 'lonely': 'lone', 'unglued': 'uncle', 'vulnerable': 'julner', 'equality': 'equal', 'ultimately': 'until', 'causes': 'cause', 'considers': 'consider', 'adequate': 'adieu', 'preliminary': 'preliminary', 'perception': 'percent', 'deny': 'den', 'systematic': 'system', 'decreases': 'decrees', 'clinical': 'clinic', 'depression': 'depress', 'traumatic': 'trauma', 'stressful': 'stress', 'bullying': 'bull', 'suicides': 'suicide', 'mentality': 'mental', 'suggested': 'suggest', 'diagnose': 'diagnose', 'educate': 'duc', 'sorting': 'sort', 'consume': 'consume', 'supportive': 'support', 'deterred': 'deter', 'practitioner': 'partition', 'practice': 'practice', 'recovered': 'remove', 'alliance': 'alliance', 'peaceful': 'peace', 'elections': 'elect', 'provocation': 'prove', 'voiced': 'voice', 'limits': 'limit', 'adhering': 'adler', 'applicable': 'applied', 'executives': 'execute', 'packaged': 'package', 'delivered': 'devil', 'reinforce': 'reinforce', 'escorting': 'escort', 'criticising': 'criticism', 'officials': 'office', 'expressing': 'express', 'opinions': 'opinion', 'limitation': 'limit', 'duties': 'duty', 'submitted': 'submit', 'voicing': 'voice', 'justice': 'justice', 'influenced': 'influence', 'interests': 'interest', 'overseeing': 'verse', 'supervising': 'supervise', 'entire': 'enter', 'honesty': 'honest', 'foundations': 'found', 'presenting': 'present', 'promoting': 'promote', 'political': 'polite', 'dialogue': 'dialogue', 'peace': 'peace', 'headache': 'headache', 'referral': 'refer', 'evening': 'even', 'bloating': 'boat'}\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Download hasil data final menggunakan kode berikut"
+      ],
+      "metadata": {
+        "id": "i43tuuzOz7uL"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "output_path = '/content/gdrive/MyDrive/data_final_fix.csv'\n",
+        "data_en.to_csv(output_path, index=False)"
+      ],
+      "metadata": {
+        "id": "FP7kYB0d2w_1"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
